@@ -4,7 +4,7 @@ import { act } from 'react'
 import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  apiMocks,
+  composerApiMocks as apiMocks,
   sourceRepos,
   localReadyHostOption,
   pnpmInstallSetupConfig,
