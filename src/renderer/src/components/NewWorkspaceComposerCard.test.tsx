@@ -4,14 +4,14 @@ import { act } from 'react'
 import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  composerApiMocks as apiMocks,
   sourceRepos,
   localReadyHostOption,
   pnpmInstallSetupConfig,
   renderCard,
   findInputByLabel,
   changeInputValue,
-  findWaitSwitch
+  findWaitSwitch,
+  setupComposerTestEnvironment
 } from './new-workspace-composer-card-test-fixture'
 
 let current: { container: HTMLDivElement; root: Root } | null = null
@@ -22,30 +22,7 @@ function unmountCurrent(): void {
 }
 
 describe('NewWorkspaceComposerCard folder task source mode', () => {
-  beforeEach(() => {
-    ;(window as unknown as { api: unknown }).api = {
-      runtimeEnvironments: {
-        getStatus: apiMocks.runtimeGetStatus
-      },
-      ssh: {
-        connect: apiMocks.sshConnect
-      }
-    }
-    apiMocks.runtimeGetStatus.mockResolvedValue({
-      id: 'status',
-      ok: true,
-      result: {
-        runtimeId: 'runtime-devbox',
-        rendererGraphEpoch: 1,
-        graphStatus: 'ready',
-        authoritativeWindowId: null,
-        liveTabCount: 0,
-        liveLeafCount: 0
-      },
-      _meta: { runtimeId: 'runtime-devbox' }
-    })
-    apiMocks.sshConnect.mockResolvedValue(undefined)
-  })
+  beforeEach(setupComposerTestEnvironment)
 
   afterEach(() => {
     unmountCurrent()

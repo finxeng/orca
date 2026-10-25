@@ -1,6 +1,6 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { expect, vi } from 'vitest'
+import { expect, vi, type Mock } from 'vitest'
 import NewWorkspaceComposerCard from './NewWorkspaceComposerCard'
 import type { NewWorkspaceProjectOption } from '@/lib/new-workspace-project-options'
 import type { ProjectHostSetupOption } from '@/lib/project-host-setup-options'
@@ -116,8 +116,35 @@ vi.mock('@/components/new-workspace/ProjectCombobox', () => ({
   )
 }))
 
-export const composerStoreMocks = storeMocks
-export const composerApiMocks = apiMocks
+export const composerStoreMocks: {
+  closeModal: Mock
+  openModal: Mock
+  openSettingsPage: Mock
+  openSettingsTarget: Mock
+  setRuntimeEnvironmentStatus: Mock
+} = storeMocks
+export const composerApiMocks: { runtimeGetStatus: Mock; sshConnect: Mock } = apiMocks
+
+export function setupComposerTestEnvironment(): void {
+  ;(window as unknown as { api: unknown }).api = {
+    runtimeEnvironments: { getStatus: apiMocks.runtimeGetStatus },
+    ssh: { connect: apiMocks.sshConnect }
+  }
+  apiMocks.runtimeGetStatus.mockResolvedValue({
+    id: 'status',
+    ok: true,
+    result: {
+      runtimeId: 'runtime-devbox',
+      rendererGraphEpoch: 1,
+      graphStatus: 'ready',
+      authoritativeWindowId: null,
+      liveTabCount: 0,
+      liveLeafCount: 0
+    },
+    _meta: { runtimeId: 'runtime-devbox' }
+  })
+  apiMocks.sshConnect.mockResolvedValue(undefined)
+}
 
 const projectOptions: NewWorkspaceProjectOption[] = [
   {

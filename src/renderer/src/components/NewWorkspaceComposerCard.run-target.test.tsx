@@ -14,7 +14,8 @@ import {
   findConnectButton,
   renderCard,
   openRunTargetPicker,
-  findRunTargetItem
+  findRunTargetItem,
+  setupComposerTestEnvironment
 } from './new-workspace-composer-card-test-fixture'
 
 let current: { container: HTMLDivElement; root: Root } | null = null
@@ -25,30 +26,7 @@ function unmountCurrent(): void {
 }
 
 describe('NewWorkspaceComposerCard run target picker', () => {
-  beforeEach(() => {
-    ;(window as unknown as { api: unknown }).api = {
-      runtimeEnvironments: {
-        getStatus: apiMocks.runtimeGetStatus
-      },
-      ssh: {
-        connect: apiMocks.sshConnect
-      }
-    }
-    apiMocks.runtimeGetStatus.mockResolvedValue({
-      id: 'status',
-      ok: true,
-      result: {
-        runtimeId: 'runtime-devbox',
-        rendererGraphEpoch: 1,
-        graphStatus: 'ready',
-        authoritativeWindowId: null,
-        liveTabCount: 0,
-        liveLeafCount: 0
-      },
-      _meta: { runtimeId: 'runtime-devbox' }
-    })
-    apiMocks.sshConnect.mockResolvedValue(undefined)
-  })
+  beforeEach(setupComposerTestEnvironment)
 
   afterEach(() => {
     unmountCurrent()
