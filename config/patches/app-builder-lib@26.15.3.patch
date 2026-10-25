@@ -1,0 +1,10 @@
+diff --git a/out/targets/nsis/NsisTarget.js b/out/targets/nsis/NsisTarget.js
+--- a/out/targets/nsis/NsisTarget.js
++++ b/out/targets/nsis/NsisTarget.js
+@@ -371,5 +371,5 @@ class NsisTarget extends core_1.Target {
+         }
+         else {
+             const wineVm = new WineVm_1.WineVmManager((_a = packager.config.toolsets) === null || _a === void 0 ? void 0 : _a.wine);
+-            await wineVm.exec(installerPath, [], { env: { __COMPAT_LAYER: "RunAsInvoker" } });
++            await wineVm.exec(installerPath, [], { env: { __COMPAT_LAYER: "RunAsInvoker", ...(isWin ? { SystemRoot: process.env.SystemRoot } : {}) } });
+         }

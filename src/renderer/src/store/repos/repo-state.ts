@@ -54,6 +54,7 @@ export type RepoUpdate = Partial<
     | 'worktreeVisibilitySourcePreferences'
     | 'projectGroupId'
     | 'projectGroupOrder'
+    | 'gitLabPromotion'
   >
 > & {
   externalWorktreeVisibility?: Repo['externalWorktreeVisibility'] | null

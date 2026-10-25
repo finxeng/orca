@@ -26,6 +26,17 @@ export function createRuntimeGitLabApi(transport: RuntimeGitLabTransport): GitLa
     transport.call<Result>(method, mapRepoPathArg(args))
 
   return {
+    createPromotionMR: (args) =>
+      route<GitLabApiResult<'createPromotionMR'>>(GITLAB_WEB_RPC_METHODS.createPromotionMR, args),
+    releaseBranchInfo: (args) =>
+      route<GitLabApiResult<'releaseBranchInfo'>>(GITLAB_WEB_RPC_METHODS.releaseBranchInfo, args),
+    createReleaseBranch: (args) =>
+      route<GitLabApiResult<'createReleaseBranch'>>(
+        GITLAB_WEB_RPC_METHODS.createReleaseBranch,
+        args
+      ),
+    createReleaseTag: (args) =>
+      route<GitLabApiResult<'createReleaseTag'>>(GITLAB_WEB_RPC_METHODS.createReleaseTag, args),
     viewer: () => Promise.resolve(null),
     diagnoseAuth: () => route<GitLabApiResult<'diagnoseAuth'>>(GITLAB_WEB_RPC_METHODS.diagnoseAuth),
     rateLimit: (args) =>

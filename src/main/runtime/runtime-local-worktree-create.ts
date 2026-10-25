@@ -12,6 +12,7 @@ import {
 import { resolveDefaultBaseRefWithLocalGit } from '../git/repo'
 import type { LocalGitExecOptions } from '../git/repo-default-base-ref'
 import { resolveLocalGitUsername } from '../git/git-username'
+import { resolveGitLabFeatureBranchName } from '../gitlab/feature-branch-name'
 import { computeWorkspaceRoot, getWorktreePathSettings } from '../ipc/worktree-logic'
 import { resolveWorktreeCreateBase } from '../worktree-create-base'
 import type { RuntimeManagedWorktreeCreateArgs } from './runtime-managed-worktree-create-types'
@@ -100,6 +101,7 @@ async function performRuntimeLocalWorktreeCreate<T>(args: RuntimeLocalWorktreeCr
   }
   // Username and base resolution are independent read-only probes. Starting
   // both before awaiting removes one serial git/config round trip from create.
+  const featureBranchPromise = resolveGitLabFeatureBranchName(repo, request, worktreeGitOptions)
   const usernamePromise =
     !request.branchNameOverride && settings.branchPrefix === 'git-username'
       ? resolveLocalGitUsername(repo.path)
@@ -123,7 +125,11 @@ async function performRuntimeLocalWorktreeCreate<T>(args: RuntimeLocalWorktreeCr
       return hasLocalWorktreeBaseRef(repo.path, candidate, worktreeGitOptions)
     }
   })
-  const [username, baseBranch] = await Promise.all([usernamePromise, baseBranchPromise])
+  const [username, baseBranch, featureBranch] = await Promise.all([
+    usernamePromise,
+    baseBranchPromise,
+    featureBranchPromise
+  ])
   if (!baseBranch) {
     throw new Error(
       'Could not resolve a default base ref for this repo. Pass an explicit --base and try again.'
@@ -155,6 +161,7 @@ async function performRuntimeLocalWorktreeCreate<T>(args: RuntimeLocalWorktreeCr
       worktreePathSettings: pathSettings,
       workspaceRoot: computeWorkspaceRoot(repo.path, pathSettings),
       username,
+      featureBranch,
       store,
       baseBranch: base.baseBranch,
       localWorktreeGitOptions: worktreeGitOptions,
@@ -184,7 +191,7 @@ async function performRuntimeLocalWorktreeCreate<T>(args: RuntimeLocalWorktreeCr
       timing: args.timing
     })
     const materialized = await materializeRuntimeLocalWorktree({
-      request,
+      request: featureBranch ? { ...request, pendingFirstAgentMessageRename: false } : request,
       repo,
       store,
       settings,

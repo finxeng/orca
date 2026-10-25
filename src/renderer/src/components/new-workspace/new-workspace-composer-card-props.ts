@@ -6,7 +6,7 @@ import type {
   NeedsSetupProjectHostOption,
   ProjectHostSetupOption
 } from '@/lib/project-host-setup-options'
-import type { SetupConfig } from '@/lib/new-workspace'
+import type { LinkedWorkItemSummary, SetupConfig } from '@/lib/new-workspace'
 import type { WorkspaceCreateErrorDisplay } from '@/lib/workspace-create-error-format'
 import type { SmartNameMode } from '../../../../shared/new-workspace/smart-workspace-source-results'
 import type SmartWorkspaceNameField from './SmartWorkspaceNameField'
@@ -74,6 +74,7 @@ export type NewWorkspaceComposerCardProps = {
   emptyProjectMessage?: string
   showAddProjectButton?: boolean
   name: string
+  linkedWorkItem?: LinkedWorkItemSummary | null
   onNameValueChange: (value: string) => void
   branchNameOverride: string | undefined
   onBranchNameOverrideChange: (value: string | undefined) => void

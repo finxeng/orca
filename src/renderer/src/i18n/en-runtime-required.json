@@ -76,6 +76,7 @@
       "NewWorkspaceComposerCard": {
         "0e587e31fb": "yaml",
         "2132b670da": "both",
+        "2688050e4b": "Name",
         "7711ad5122": "Local setup command",
         "addHostHint": "Register another machine or Orca server",
         "cloneDestinationPlaceholder": "/parent/directory/on/host",
@@ -3427,6 +3428,17 @@
       "viewOnly": "Sparse checkout · View changes do not change checked-out files.",
       "viewing": "Viewing: {{path}}"
     }
+  },
+  "gitlabPromotion": {
+    "commitMessageHint": "Enter a commit message, for example: Run the log schedule every minute",
+    "currentFeatureBranch": "Current branch · Feature branch",
+    "menu": "GitLab release workflow",
+    "next": "Next: {{stage}}",
+    "pipelineMissing": "no pipeline found",
+    "pipelineSuccess": "passed",
+    "releaseShaUnavailable": "Could not read the release branch commit.",
+    "stagedChanges": "Staged changes",
+    "uncommittedChanges": "Uncommitted changes"
   },
   "jira": {
     "workspace": {

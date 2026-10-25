@@ -26,6 +26,7 @@ import { findIndexedRepoOwnerForHost } from '@/lib/worktree-runtime-owner-index'
 import { getWorkspaceAttachments } from '../../../../shared/workspace-attachments'
 import type { WorkspaceAttachment } from '../../../../shared/worktree/types'
 import { WorktreeDisplayNameField } from './WorktreeDisplayNameField'
+import { getWorktreeGitIdentityDisplay } from '../../../../shared/worktree/git-identity-display'
 import { WorktreeLinkedItemsField } from './WorktreeLinkedItemsField'
 import { buildWorkspaceAttachmentEdits } from './worktree-attachment-editing'
 import { resizeCommentTextarea } from './worktree-comment-textarea-sizing'
@@ -61,6 +62,8 @@ const WorktreeMetaDialogDraft = React.memo(function WorktreeMetaDialogDraft() {
     ownerRepoId,
     executionHostId
   })
+  const gitIdentity =
+    worktree && !isFolderWorkspace ? getWorktreeGitIdentityDisplay(worktree) : null
   const repo = useAppStore((s) =>
     worktree && !isFolderWorkspace
       ? (findIndexedRepoOwnerForHost(
@@ -216,6 +219,23 @@ const WorktreeMetaDialogDraft = React.memo(function WorktreeMetaDialogDraft() {
             portalContainer={dialogElement}
             value={displayNameInput}
           />
+          {worktree && !isFolderWorkspace ? (
+            <div className="space-y-1">
+              <span className="text-2xs font-medium text-muted-foreground">
+                {translate('workspace.links.currentBranch', 'Current branch')}
+              </span>
+              <p
+                className="min-w-0 truncate font-mono text-xs text-foreground"
+                title={gitIdentity?.kind === 'branch' ? gitIdentity.branchName : undefined}
+              >
+                {gitIdentity?.kind === 'branch'
+                  ? gitIdentity.branchName
+                  : gitIdentity?.kind === 'detached'
+                    ? gitIdentity.sidebarLabel
+                    : '—'}
+              </p>
+            </div>
+          ) : null}
           <WorktreeLinkedItemsField
             key={`${worktreeId}:${isOpen}`}
             items={items}

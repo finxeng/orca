@@ -1,10 +1,12 @@
 import { CreateHostedReviewComposer } from '../../CreateHostedReviewComposer'
+import { translate } from '@/i18n/i18n'
 import { CommitArea } from '../commit/commit-area'
 import { writeCommitDraftForWorktree } from '../commit/commit-drafts'
 import type { SourceControlPanelReadyProps } from './panel-props'
 
 type SourceControlCommitSurfaceProps = SourceControlPanelReadyProps & {
   showGenericEmptyState: boolean
+  promotionFeature?: boolean
 }
 
 /**
@@ -15,6 +17,7 @@ export function SourceControlCommitSurface({
   activeRepo,
   model,
   showGenericEmptyState,
+  promotionFeature = false,
   worktreePath
 }: SourceControlCommitSurfaceProps) {
   const {
@@ -85,7 +88,7 @@ export function SourceControlCommitSurface({
     updateCommitDrafts
   } = model
 
-  if (directCreatePrAction) {
+  if (directCreatePrAction && !promotionFeature) {
     return (
       <CreateHostedReviewComposer
         key={`${activeRepo.id}:${activeWorktreeId ?? worktreePath}:${branchName}`}
@@ -130,51 +133,59 @@ export function SourceControlCommitSurface({
   }
 
   return (
-    <CommitArea
-      worktreeId={activeWorktreeId}
-      connectionId={activeConnectionId}
-      repoId={activeRepo.id}
-      launchPlatform={activeSourceControlLaunchPlatform}
-      commitMessage={commitMessage}
-      commitError={commitError}
-      commitFailureRecoveryPrompt={commitFailureRecoveryPrompt}
-      pushRecovery={pushRecovery}
-      remoteActionError={pushRecovery ? null : (remoteActionError?.message ?? null)}
-      createPrIntentNotice={createPrIntentNotice}
-      isCommitting={isCommitting}
-      isFixingCommitFailureWithAI={isLaunchingCommitFailureAgent}
-      isFixingPushFailureWithAI={isLaunchingPushFailureAgent}
-      isCreatingPr={isCreatingPr || isCreatePrIntentInFlight}
-      isCreatePrIntentInFlight={isCreatePrIntentInFlight}
-      groupId={activeGroupId ?? activeWorktreeId}
-      showComposer={!showGenericEmptyState}
-      sourceControlAiActionsVisible={sourceControlAiActionsVisible}
-      aiAgentConfigured={resolvedCommitMessageAi?.ok === true}
-      isGenerating={isGenerating}
-      generateError={generateError}
-      stagedCount={grouped.staged.length}
-      hasPartiallyStagedChanges={hasPartiallyStagedChanges}
-      hasUnresolvedConflicts={unresolvedConflicts.length > 0}
-      isRemoteOperationActive={isRemoteOperationActive || isAbortingOperation}
-      inFlightRemoteOpKind={inFlightRemoteOpKind}
-      primaryAction={primaryAction}
-      dropdownItems={dropdownItems}
-      fixCommitFailureRecipe={getLaunchActionRecipe('fixCommitFailure')}
-      fixPushFailureRecipe={getLaunchActionRecipe('fixPushFailure')}
-      onCommitMessageChange={(value) => {
-        if (!activeWorktreeId) {
-          return
-        }
-        updateCommitDrafts((prev) => writeCommitDraftForWorktree(prev, activeWorktreeId, value))
-      }}
-      onGenerate={handleGenerateCommitMessageClick}
-      onCancelGenerate={handleCancelGenerate}
-      onSaveLaunchActionDefault={saveLaunchActionDefault}
-      onOpenSourceControlAiSettings={openSourceControlAiSettings}
-      onFixCommitFailureWithAI={handleFixCommitFailureWithAI}
-      onFixPushFailureWithAI={handleFixPushFailureWithAI}
-      onPrimaryAction={handlePrimaryClick}
-      onDropdownAction={handleActionInvoke}
-    />
+    <div className={promotionFeature ? 'border-b border-border pt-4' : undefined}>
+      {promotionFeature ? (
+        <h2 className="mb-2 px-4 text-xs font-semibold">
+          {translate('gitlabPromotion.commitChanges', 'Commit changes')}
+        </h2>
+      ) : null}
+      <CommitArea
+        worktreeId={activeWorktreeId}
+        connectionId={activeConnectionId}
+        repoId={activeRepo.id}
+        launchPlatform={activeSourceControlLaunchPlatform}
+        commitMessage={commitMessage}
+        commitError={commitError}
+        commitFailureRecoveryPrompt={commitFailureRecoveryPrompt}
+        pushRecovery={pushRecovery}
+        remoteActionError={pushRecovery ? null : (remoteActionError?.message ?? null)}
+        createPrIntentNotice={createPrIntentNotice}
+        isCommitting={isCommitting}
+        isFixingCommitFailureWithAI={isLaunchingCommitFailureAgent}
+        isFixingPushFailureWithAI={isLaunchingPushFailureAgent}
+        isCreatingPr={isCreatingPr || isCreatePrIntentInFlight}
+        isCreatePrIntentInFlight={isCreatePrIntentInFlight}
+        groupId={activeGroupId ?? activeWorktreeId}
+        showComposer={!showGenericEmptyState}
+        sourceControlAiActionsVisible={sourceControlAiActionsVisible}
+        aiAgentConfigured={resolvedCommitMessageAi?.ok === true}
+        isGenerating={isGenerating}
+        generateError={generateError}
+        stagedCount={grouped.staged.length}
+        hasPartiallyStagedChanges={hasPartiallyStagedChanges}
+        hasUnresolvedConflicts={unresolvedConflicts.length > 0}
+        isRemoteOperationActive={isRemoteOperationActive || isAbortingOperation}
+        inFlightRemoteOpKind={inFlightRemoteOpKind}
+        primaryAction={primaryAction}
+        dropdownItems={dropdownItems}
+        fixCommitFailureRecipe={getLaunchActionRecipe('fixCommitFailure')}
+        fixPushFailureRecipe={getLaunchActionRecipe('fixPushFailure')}
+        onCommitMessageChange={(value) => {
+          if (!activeWorktreeId) {
+            return
+          }
+          updateCommitDrafts((prev) => writeCommitDraftForWorktree(prev, activeWorktreeId, value))
+        }}
+        onGenerate={handleGenerateCommitMessageClick}
+        onCancelGenerate={handleCancelGenerate}
+        onSaveLaunchActionDefault={saveLaunchActionDefault}
+        onOpenSourceControlAiSettings={openSourceControlAiSettings}
+        onFixCommitFailureWithAI={handleFixCommitFailureWithAI}
+        onFixPushFailureWithAI={handleFixPushFailureWithAI}
+        onPrimaryAction={handlePrimaryClick}
+        onDropdownAction={handleActionInvoke}
+        promotionFeature={promotionFeature}
+      />
+    </div>
   )
 }

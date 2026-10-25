@@ -11,7 +11,8 @@ export function SectionHeader({
   conflictCount = 0,
   isCollapsed,
   onToggle,
-  actions
+  actions,
+  prominent = false
 }: {
   label: string
   count: number
@@ -21,6 +22,7 @@ export function SectionHeader({
   isCollapsed: boolean
   onToggle: () => void
   actions?: React.ReactNode
+  prominent?: boolean
 }): React.JSX.Element {
   // Why: shared rounded container so the hover background spans the whole row instead of clipping around the label.
   return (
@@ -37,7 +39,12 @@ export function SectionHeader({
           <ChevronDown
             className={cn('size-3.5 shrink-0 transition-transform', isCollapsed && '-rotate-90')}
           />
-          <span className="min-w-0 flex-1">
+          <span
+            className={cn(
+              'min-w-0 flex-1',
+              prominent && 'normal-case tracking-normal text-xs text-foreground'
+            )}
+          >
             <span className="flex min-w-0 items-center gap-1">
               <span className="min-w-0 truncate" title={label}>
                 {label}

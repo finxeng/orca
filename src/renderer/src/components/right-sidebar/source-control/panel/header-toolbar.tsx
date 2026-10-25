@@ -1,6 +1,6 @@
 import { ImeInput } from '@/lib/ime-text-field'
 import React, { useCallback, useEffect, useRef } from 'react'
-import { GitPullRequestArrow, Loader2, Search, X } from 'lucide-react'
+import { GitBranch, GitPullRequestArrow, Loader2, Search, X } from 'lucide-react'
 import type { GitBranchCompareSummary } from '../../../../../../shared/git-diff-compare-types'
 import type { GitBranchLineTotal } from '../../../../../../shared/git-status-types'
 import type { SourceControlViewMode } from '../../../../../../shared/ui-chrome-types'
@@ -42,6 +42,7 @@ type SourceControlHeaderToolbarProps = {
   headDisplay?: WorktreeGitIdentityDisplay | null
   manualReviewUrl?: string | null
   branchLineTotal?: GitBranchLineTotal | null
+  promotionFeature?: boolean
 }
 
 function HostedReviewToolbarLink({
@@ -163,7 +164,8 @@ export function SourceControlHeaderToolbar({
   compareBaseRef,
   headDisplay = null,
   manualReviewUrl,
-  branchLineTotal
+  branchLineTotal,
+  promotionFeature = false
 }: SourceControlHeaderToolbarProps): React.JSX.Element {
   const filterInputRef = useRef<HTMLInputElement>(null)
   const normalizedFilter = filterQuery.trim()
@@ -207,14 +209,21 @@ export function SourceControlHeaderToolbar({
     : translate('auto.components.right.sidebar.SourceControl.b3c8f1a902', 'Filter files by name')
 
   return (
-    <div className="border-b border-border px-3 pt-1.5 pb-1">
+    <div
+      className={cn('border-b border-border', promotionFeature ? 'px-4 py-3' : 'px-3 pt-1.5 pb-1')}
+    >
       <div
         className={cn('flex min-w-0 items-center gap-1', filterExpanded && 'w-full gap-1.5')}
         data-filter-expanded={filterExpanded ? 'true' : 'false'}
       >
         {showCollapsedToolbar ? (
           <>
-            {hostedReview ? (
+            {promotionFeature ? (
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 text-xs font-medium">
+                <GitBranch className="size-3.5 shrink-0" aria-hidden="true" />
+                {translate('gitlabPromotion.sourceControlTitle', 'Source control')}
+              </div>
+            ) : hostedReview ? (
               <HostedReviewToolbarLink
                 review={hostedReview}
                 onOpenHostedReviewInChecks={onOpenHostedReviewInChecks}
@@ -234,7 +243,9 @@ export function SourceControlHeaderToolbar({
             ) : (
               <span className="min-w-0 flex-1" aria-hidden="true" />
             )}
-            {(visibleCreatePrHeaderAction || suppressedGitHubPRNumber !== null) && !hostedReview ? (
+            {!promotionFeature &&
+            (visibleCreatePrHeaderAction || suppressedGitHubPRNumber !== null) &&
+            !hostedReview ? (
               // Why: keep filter/overflow pinned right without stretching Create PR.
               <span className="min-w-0 flex-1" aria-hidden="true" />
             ) : null}
@@ -308,7 +319,12 @@ export function SourceControlHeaderToolbar({
       </div>
 
       {shouldShowSourceControlBranchContextChrome(branchSummary, compareBaseRef, headDisplay) ? (
-        <div className="mt-1">
+        <div className={promotionFeature ? 'mt-5 border-t border-border pt-3' : 'mt-1'}>
+          {promotionFeature ? (
+            <div className="mb-2 text-2xs font-medium text-muted-foreground">
+              {translate('gitlabPromotion.currentFeatureBranch', 'Current feature branch')}
+            </div>
+          ) : null}
           <SourceControlBranchContextRow
             summary={branchSummary}
             compareBaseRef={compareBaseRef}
@@ -317,6 +333,11 @@ export function SourceControlHeaderToolbar({
             branchLineTotal={branchLineTotal}
             onChangeBaseRef={onChangeBaseRef}
             onRetry={onRefreshBranchCompare}
+            baseCaption={
+              promotionFeature
+                ? translate('gitlabPromotion.compareBase', 'Compare base')
+                : undefined
+            }
           />
         </div>
       ) : null}

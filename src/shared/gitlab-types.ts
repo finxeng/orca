@@ -262,6 +262,7 @@ export type GitLabWorkItemDetails = {
   comments: MRComment[]
   /** MR head/base SHAs — MRs only. Reserved for a future Files tab. */
   headSha?: string
+  pipelineStatus?: string
   baseSha?: string
   startSha?: string
   files?: GitLabMRFile[]

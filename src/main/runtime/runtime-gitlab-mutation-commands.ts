@@ -21,6 +21,12 @@ import {
   updateMRReviewers
 } from '../gitlab/client'
 import { getRepoRoutingConnectionId } from '../../shared/execution-host'
+import {
+  createGitLabReleaseBranch,
+  createGitLabReleaseTag,
+  getGitLabReleaseBranchInfo
+} from '../gitlab/release-operations'
+import { createGitLabPromotionMR } from '../gitlab/promotion-merge-request'
 
 type LocalGitArgs = [] | [{ wslDistro?: string }]
 
@@ -31,6 +37,56 @@ export class RuntimeGitLabMutationCommands {
       getLocalGitArgs: (repo: Repo) => LocalGitArgs
     }
   ) {}
+
+  private async releaseContext(repoSelector: string) {
+    const repo = await this.deps.resolveRepo(repoSelector)
+    return {
+      repoPath: repo.path,
+      connectionId: getRepoRoutingConnectionId(repo),
+      gitOptions: this.deps.getLocalGitArgs(repo)[0]
+    }
+  }
+
+  async createGitLabRepoPromotionMR(
+    repoSelector: string,
+    source: string,
+    target: string,
+    expectedSha: string,
+    issueNumbers?: number[]
+  ) {
+    return createGitLabPromotionMR(
+      await this.releaseContext(repoSelector),
+      source,
+      target,
+      expectedSha,
+      issueNumbers
+    )
+  }
+
+  async getGitLabRepoReleaseBranchInfo(repoSelector: string, branch?: string) {
+    return getGitLabReleaseBranchInfo(await this.releaseContext(repoSelector), branch)
+  }
+
+  async createGitLabRepoReleaseBranch(
+    repoSelector: string,
+    branch: string,
+    expectedDefaultSha: string
+  ) {
+    return createGitLabReleaseBranch(
+      await this.releaseContext(repoSelector),
+      branch,
+      expectedDefaultSha
+    )
+  }
+
+  async createGitLabRepoReleaseTag(
+    repoSelector: string,
+    branch: string,
+    tag: string,
+    expectedSha: string
+  ) {
+    return createGitLabReleaseTag(await this.releaseContext(repoSelector), branch, tag, expectedSha)
+  }
 
   async createGitLabRepoIssue(repoSelector: string, title: string, body: string) {
     const repo = await this.deps.resolveRepo(repoSelector)

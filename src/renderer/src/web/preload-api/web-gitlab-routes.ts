@@ -1,4 +1,8 @@
 export type WebGitLabRouteKey =
+  | 'createPromotionMR'
+  | 'releaseBranchInfo'
+  | 'createReleaseBranch'
+  | 'createReleaseTag'
   | 'diagnoseAuth'
   | 'rateLimit'
   | 'listMRs'
@@ -24,6 +28,10 @@ export type WebGitLabRouteKey =
   | 'workItemByPath'
 
 export type WebGitLabRuntimeMethod =
+  | 'gitlab.createPromotionMR'
+  | 'gitlab.releaseBranchInfo'
+  | 'gitlab.createReleaseBranch'
+  | 'gitlab.createReleaseTag'
   | 'gitlab.diagnoseAuth'
   | 'gitlab.rateLimit'
   | 'gitlab.listMRs'
@@ -48,6 +56,10 @@ export type WebGitLabRuntimeMethod =
   | 'gitlab.workItemByPath'
 
 export const GITLAB_WEB_RPC_METHODS = {
+  createPromotionMR: 'gitlab.createPromotionMR',
+  releaseBranchInfo: 'gitlab.releaseBranchInfo',
+  createReleaseBranch: 'gitlab.createReleaseBranch',
+  createReleaseTag: 'gitlab.createReleaseTag',
   diagnoseAuth: 'gitlab.diagnoseAuth',
   rateLimit: 'gitlab.rateLimit',
   listMRs: 'gitlab.listMRs',

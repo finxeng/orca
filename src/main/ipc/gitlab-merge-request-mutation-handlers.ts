@@ -15,8 +15,90 @@ import {
 import type { ProjectRef } from '../gitlab/gl-utils'
 import type { GitLabRepoSelectorArgs } from './gitlab-repo-access'
 import { assertRegisteredRepo, localGitOptionArgs, repoConnectionId } from './gitlab-repo-access'
+import {
+  createGitLabReleaseBranch,
+  createGitLabReleaseTag,
+  getGitLabReleaseBranchInfo
+} from '../gitlab/release-operations'
+import { createGitLabPromotionMR } from '../gitlab/promotion-merge-request'
 
 export function registerGitLabMergeRequestMutationHandlers(store: Store): void {
+  ipcMain.handle(
+    'gitlab:createPromotionMR',
+    async (
+      _event,
+      args: GitLabRepoSelectorArgs & {
+        source: string
+        target: string
+        expectedSha: string
+        issueNumbers?: number[]
+      }
+    ) => {
+      const repo = assertRegisteredRepo(args, store)
+      return createGitLabPromotionMR(
+        {
+          repoPath: repo.path,
+          connectionId: repoConnectionId(repo),
+          gitOptions: localGitOptionArgs(store, repo)[0]
+        },
+        args.source,
+        args.target,
+        args.expectedSha,
+        args.issueNumbers
+      )
+    }
+  )
+  ipcMain.handle(
+    'gitlab:releaseBranchInfo',
+    async (_event, args: GitLabRepoSelectorArgs & { branch?: string }) => {
+      const repo = assertRegisteredRepo(args, store)
+      return getGitLabReleaseBranchInfo(
+        {
+          repoPath: repo.path,
+          connectionId: repoConnectionId(repo),
+          gitOptions: localGitOptionArgs(store, repo)[0]
+        },
+        args.branch
+      )
+    }
+  )
+  ipcMain.handle(
+    'gitlab:createReleaseBranch',
+    async (
+      _event,
+      args: GitLabRepoSelectorArgs & { branch: string; expectedDefaultSha: string }
+    ) => {
+      const repo = assertRegisteredRepo(args, store)
+      return createGitLabReleaseBranch(
+        {
+          repoPath: repo.path,
+          connectionId: repoConnectionId(repo),
+          gitOptions: localGitOptionArgs(store, repo)[0]
+        },
+        args.branch,
+        args.expectedDefaultSha
+      )
+    }
+  )
+  ipcMain.handle(
+    'gitlab:createReleaseTag',
+    async (
+      _event,
+      args: GitLabRepoSelectorArgs & { branch: string; tag: string; expectedSha: string }
+    ) => {
+      const repo = assertRegisteredRepo(args, store)
+      return createGitLabReleaseTag(
+        {
+          repoPath: repo.path,
+          connectionId: repoConnectionId(repo),
+          gitOptions: localGitOptionArgs(store, repo)[0]
+        },
+        args.branch,
+        args.tag,
+        args.expectedSha
+      )
+    }
+  )
   ipcMain.handle(
     'gitlab:closeMR',
     async (_event, args: GitLabRepoSelectorArgs & { iid: number }) => {

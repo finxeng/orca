@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
+const pythonCommand = process.platform === 'win32' ? 'python' : 'python3'
 const checks = [
   {
     name: 'macOS Swift renderer/provider tests',
@@ -15,7 +16,7 @@ const checks = [
   },
   {
     name: 'Linux provider Python syntax',
-    command: 'python3',
+    command: pythonCommand,
     args: [
       '-c',
       [
@@ -29,7 +30,7 @@ const checks = [
   },
   {
     name: 'Linux snapshot renderer tests',
-    command: 'python3',
+    command: pythonCommand,
     args: ['native/computer-use-linux/runtime_render_test.py'],
     enabled: true
   },
@@ -40,7 +41,7 @@ const checks = [
   },
   {
     name: 'Linux provider imports',
-    command: 'python3',
+    command: pythonCommand,
     args: [
       '-c',
       [

@@ -5,6 +5,23 @@ export const RepoSelector = z.object({
   repo: requiredString('Missing repo selector')
 })
 
+export const ReleaseBranchInfo = RepoSelector.extend({ branch: z.string().optional() })
+export const CreatePromotionMR = RepoSelector.extend({
+  source: requiredString('Missing feature branch'),
+  target: requiredString('Missing target branch'),
+  expectedSha: requiredString('Missing feature commit'),
+  issueNumbers: z.array(z.number().int().positive()).max(20).optional()
+})
+export const CreateReleaseBranch = RepoSelector.extend({
+  branch: requiredString('Missing release branch'),
+  expectedDefaultSha: requiredString('Missing base commit')
+})
+export const CreateReleaseTag = RepoSelector.extend({
+  branch: requiredString('Missing release branch'),
+  tag: requiredString('Missing tag'),
+  expectedSha: requiredString('Missing verified commit')
+})
+
 export const EmptyParams = z.object({}).optional().default({})
 
 export const GitLabRateLimit = z

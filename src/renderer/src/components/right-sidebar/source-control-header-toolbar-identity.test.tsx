@@ -44,6 +44,7 @@ function renderToolbar(options?: {
   visibleCreatePrHeaderAction?: PrimaryAction | null
   hostedReview?: HostedReviewInfo | null
   suppressedGitHubPRNumber?: number | null
+  promotionFeature?: boolean
 }): string {
   return renderToStaticMarkup(
     <SourceControlHeaderToolbar
@@ -79,11 +80,20 @@ function renderToolbar(options?: {
           : options.headDisplay
       }
       branchLineTotal={options?.branchLineTotal}
+      promotionFeature={options?.promotionFeature}
     />
   )
 }
 
 describe('SourceControlHeaderToolbar branch identity', () => {
+  it('uses the promotion layout without a second generic MR action', () => {
+    const markup = renderToolbar({ promotionFeature: true })
+
+    expect(markup).toContain('Source control')
+    expect(markup).toContain('Compare base')
+    expect(markup).toContain('brennanb2025/source-control-branch-name')
+    expect(markup).not.toContain('Create PR')
+  })
   it('shows the relink recovery instead of blank chrome for a matched unlinked PR', () => {
     const markup = renderToolbar({
       visibleCreatePrHeaderAction: null,

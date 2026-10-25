@@ -6,6 +6,7 @@ import { sanitizeRepoIcon } from '../../../shared/repo-icon'
 import { normalizeGhAccountBinding } from '../../../shared/github/account-binding'
 import { normalizeJiraProjectReference } from '../../../shared/jira/jira-project-reference'
 import { normalizeRepoSourceControlAiOverrides } from '../../../shared/source-control-ai'
+import { normalizeGitLabPromotionWorkflow } from '../../../shared/gitlab-promotion-workflow'
 import {
   sanitizeForkSyncMode,
   sanitizeGitRemoteIdentity,
@@ -35,6 +36,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     upstream: rawUpstream,
     gitRemoteIdentity: rawGitRemoteIdentity,
     sourceControlAi: rawSourceControlAi,
+    gitLabPromotion: rawGitLabPromotion,
     projectHostSetupMethod: rawProjectHostSetupMethod,
     forkSyncMode: rawForkSyncMode,
     ghAccount: rawGhAccount,
@@ -47,6 +49,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
   const upstream = sanitizeRepoUpstream(rawUpstream)
   const gitRemoteIdentity = sanitizeGitRemoteIdentity(rawGitRemoteIdentity)
   const sourceControlAi = normalizeRepoSourceControlAiOverrides(rawSourceControlAi)
+  const gitLabPromotion = normalizeGitLabPromotionWorkflow(rawGitLabPromotion)
   const projectHostSetupMethod = sanitizeRepoProjectHostSetupMethod(rawProjectHostSetupMethod)
   const forkSyncMode = sanitizeForkSyncMode(rawForkSyncMode)
   const ghAccount = normalizeGhAccountBinding(rawGhAccount)
@@ -71,6 +74,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     ...(upstream !== undefined ? { upstream } : {}),
     ...(gitRemoteIdentity !== undefined ? { gitRemoteIdentity } : {}),
     ...(sourceControlAi !== undefined ? { sourceControlAi } : {}),
+    ...(gitLabPromotion !== undefined ? { gitLabPromotion } : {}),
     ...(projectHostSetupMethod !== undefined ? { projectHostSetupMethod } : {}),
     ...(forkSyncMode !== undefined ? { forkSyncMode } : {}),
     ...(ghAccount ? { ghAccount } : {}),

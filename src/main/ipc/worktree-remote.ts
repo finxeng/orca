@@ -34,6 +34,10 @@ import {
 import { getBranchConflictKind, resolveDefaultBaseRefWithLocalGit } from '../git/repo'
 import { WorktreeCreateCollisionError } from '../../shared/new-workspace/worktree-create-collision'
 import { resolveLocalGitUsername } from '../git/git-username'
+import {
+  formatGitLabFeatureBranchName,
+  resolveGitLabFeatureBranchName
+} from '../gitlab/feature-branch-name'
 import { hasLocalWorktreeBaseRef } from '../git/worktree-base-ref-probe'
 import { resolveWorktreeCreateBase } from '../worktree-create-base'
 import { getHostedReviewForBranch } from '../source-control/hosted-review'
@@ -1013,6 +1017,7 @@ async function performLocalWorktreeCreate(
   )
   const requestedDisplayName = displayNameRequest.value
   // Resolve username only for generated username-prefixed branches; overlap its independent probe with base resolution.
+  const featureBranchPromise = resolveGitLabFeatureBranchName(repo, args, localWorktreeGitOptions)
   const usernamePromise =
     !args.branchNameOverride && settings.branchPrefix === 'git-username'
       ? resolveLocalGitUsername(repo.path)
@@ -1044,7 +1049,11 @@ async function performLocalWorktreeCreate(
       return hasLocalWorktreeBaseRef(repo.path, baseBranchCandidate, localGitExecOptions)
     }
   })
-  const [username, resolvedBaseBranch] = await Promise.all([usernamePromise, baseBranchPromise])
+  const [username, resolvedBaseBranch, featureBranch] = await Promise.all([
+    usernamePromise,
+    baseBranchPromise,
+    featureBranchPromise
+  ])
   let baseBranch = resolvedBaseBranch
   if (!baseBranch) {
     throw new Error(
@@ -1185,7 +1194,9 @@ async function performLocalWorktreeCreate(
         repo.path,
         selectedExistingLocalBranchName
           ? selectedExistingLocalBranchName
-          : getBranchNameOverrideCandidate(args.branchNameOverride, suffix),
+          : featureBranch
+            ? formatGitLabFeatureBranchName(featureBranch, suffix)
+            : getBranchNameOverrideCandidate(args.branchNameOverride, suffix),
         effectiveSanitizedName,
         settings,
         username,
@@ -1533,9 +1544,11 @@ async function performLocalWorktreeCreate(
         }
       : {}),
     ...(isTuiAgent(args.createdWithAgent) ? { createdWithAgent: args.createdWithAgent } : {}),
-    ...(args.pendingFirstAgentMessageRename === true && isTuiAgent(args.createdWithAgent)
-      ? { pendingFirstAgentMessageRename: true }
-      : {}),
+    ...(featureBranch
+      ? { pendingFirstAgentMessageRename: false }
+      : args.pendingFirstAgentMessageRename === true && isTuiAgent(args.createdWithAgent)
+        ? { pendingFirstAgentMessageRename: true }
+        : {}),
     ...(args.linkedIssue !== undefined ? { linkedIssue: args.linkedIssue } : {}),
     ...(args.linkedPR !== undefined ? { linkedPR: args.linkedPR } : {}),
     ...(args.linkedLinearIssue !== undefined ? { linkedLinearIssue: args.linkedLinearIssue } : {}),

@@ -8,6 +8,17 @@ type GitLabRepoSelectorArgs = {
 }
 
 export const glApi = {
+  createPromotionMR: (
+    args: GitLabRepoSelectorArgs & { source: string; target: string; expectedSha: string }
+  ) => ipcRenderer.invoke('gitlab:createPromotionMR', args),
+  releaseBranchInfo: (args: GitLabRepoSelectorArgs & { branch?: string }) =>
+    ipcRenderer.invoke('gitlab:releaseBranchInfo', args),
+  createReleaseBranch: (
+    args: GitLabRepoSelectorArgs & { branch: string; expectedDefaultSha: string }
+  ) => ipcRenderer.invoke('gitlab:createReleaseBranch', args),
+  createReleaseTag: (
+    args: GitLabRepoSelectorArgs & { branch: string; tag: string; expectedSha: string }
+  ) => ipcRenderer.invoke('gitlab:createReleaseTag', args),
   viewer: () => ipcRenderer.invoke('gitlab:viewer'),
   diagnoseAuth: () => ipcRenderer.invoke('gitlab:diagnoseAuth'),
   rateLimit: (args?: { force?: boolean; host?: string | null }) =>

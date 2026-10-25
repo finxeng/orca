@@ -1,4 +1,8 @@
 import type { TaskSourceContext } from '../../shared/task-source-context'
+import type {
+  GitLabReleaseBranchInfo,
+  GitLabPromotionMrResult
+} from '../../shared/gitlab-promotion-workflow'
 import type { ClassifiedError } from '../../shared/classified-error'
 import type {
   GetGitLabRateLimitResult,
@@ -32,6 +36,23 @@ export type GitLabRepoSelectorArgs = {
 }
 
 export type GitLabApi = {
+  createPromotionMR: (
+    args: GitLabRepoSelectorArgs & {
+      source: string
+      target: string
+      expectedSha: string
+      issueNumbers?: number[]
+    }
+  ) => Promise<GitLabPromotionMrResult>
+  releaseBranchInfo: (
+    args: GitLabRepoSelectorArgs & { branch?: string }
+  ) => Promise<GitLabReleaseBranchInfo>
+  createReleaseBranch: (
+    args: GitLabRepoSelectorArgs & { branch: string; expectedDefaultSha: string }
+  ) => Promise<GitLabReleaseBranchInfo>
+  createReleaseTag: (
+    args: GitLabRepoSelectorArgs & { branch: string; tag: string; expectedSha: string }
+  ) => Promise<{ tag: string; sha: string }>
   viewer: () => Promise<GitLabViewer | null>
   diagnoseAuth: () => Promise<GitLabAuthDiagnostic>
   rateLimit: (args?: { force?: boolean; host?: string | null }) => Promise<GetGitLabRateLimitResult>

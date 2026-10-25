@@ -1,6 +1,9 @@
 import { extractExecError, ghExecFileAsync, gitExecFileAsync } from './runner'
 import { parseHostedRemote } from './hosted-remote-url'
 import { resolveDefaultBaseRefViaExec } from './repo'
+import { isBranchSafeHostedLogin } from '../../shared/branch-safe-hosted-login'
+
+export { isBranchSafeHostedLogin } from '../../shared/branch-safe-hosted-login'
 
 const EXPLICIT_USERNAME_CONFIG_KEYS = ['github.user', 'user.username'] as const
 
@@ -28,21 +31,6 @@ export function isPlausibleHostedLogin(value: string): boolean {
     /^[A-Za-z0-9]$/.test(value) ||
     (/^[A-Za-z0-9][A-Za-z0-9_-]{0,37}[A-Za-z0-9]$/.test(value) && !value.includes('--'))
   )
-}
-
-// A login occupies one loose-ref filename; ASCII length equals the 255-byte filesystem limit.
-const MAX_BRANCH_SAFE_LOGIN_LENGTH = 255
-
-/** Configured logins accept provider-specific characters and lengths beyond GitHub's rules. */
-export function isBranchSafeHostedLogin(value: string): boolean {
-  if (value.length > MAX_BRANCH_SAFE_LOGIN_LENGTH) {
-    return false
-  }
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value)) {
-    return false
-  }
-  // Dot placements git check-ref-format rejects; `.lock` is case-sensitive there too.
-  return !value.includes('..') && !value.endsWith('.') && !value.endsWith('.lock')
 }
 
 function normalizeHostedLogin(value: string): string {

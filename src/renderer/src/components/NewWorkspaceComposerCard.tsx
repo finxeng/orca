@@ -39,6 +39,7 @@ import { getSshStatusLabel } from './new-workspace/new-workspace-composer-ssh-st
 import { useNewWorkspaceComposerFileDrop } from './new-workspace/use-new-workspace-composer-file-drop'
 import { useComposerFileDragOver } from './new-workspace/use-composer-file-drag-over'
 import { buildDefaultAgentSettingsUpdate } from '../../../shared/default-agent-settings'
+import { isValidGitLabFeatureName } from '../../../shared/gitlab-feature-name'
 
 // Why lazy: this pulls the ~41 KB project-location browser onto the boot graph, and nothing
 // reaches it without an explicit "Set location" click. Shared with the warm below so both hit
@@ -112,7 +113,25 @@ export default function NewWorkspaceComposerCard(
   // when the option clears would cut that animation short.
   const [setLocationDialogMounted, setSetLocationDialogMounted] = React.useState(false)
 
-  const selectedRepo = eligibleRepos.find((candidate) => candidate.id === repoId)
+  const selectedRepo =
+    props.selectedRepo ?? eligibleRepos.find((candidate) => candidate.id === repoId)
+  const featureNameRequired =
+    selectedRepoIsGit &&
+    ((props.linkedWorkItem?.type === 'issue' && props.linkedWorkItem.provider === 'gitlab') ||
+      (Boolean(selectedRepo?.gitLabPromotion) &&
+        props.smartNameSelection?.kind !== 'github-pr' &&
+        props.smartNameSelection?.kind !== 'gitlab-mr' &&
+        props.linkedWorkItem?.type !== 'pr' &&
+        props.linkedWorkItem?.type !== 'mr' &&
+        !props.reuseSelectedBranch))
+  const featureNameInvalid =
+    featureNameRequired && !isValidGitLabFeatureName(props.branchNameOverride)
+  const createDisabled = props.createDisabled || sparseEditing || featureNameInvalid
+  const handleCreate = (): void => {
+    if (!createDisabled) {
+      props.onCreate()
+    }
+  }
   const selectedRepoName = selectedRepo?.displayName ?? selectedRepo?.path ?? 'This project'
   const selectedProjectName =
     projectOptions.find((candidate) => candidate.id === selectedProjectId)?.displayName ??
@@ -330,10 +349,16 @@ export default function NewWorkspaceComposerCard(
           connectButtonLabel={connectButtonLabel}
           selectedProjectName={selectedProjectName}
         />
-        <NewWorkspaceComposerNameSection {...props} onNamePlainEnter={handleNamePlainEnter} />
+        <NewWorkspaceComposerNameSection
+          {...props}
+          selectedRepo={selectedRepo}
+          branchNameInputId={branchNameInputId}
+          onNamePlainEnter={handleNamePlainEnter}
+        />
         <NewWorkspaceComposerAgentSection
           {...props}
-          createDisabled={props.createDisabled || sparseEditing}
+          onCreate={handleCreate}
+          createDisabled={createDisabled}
           advancedLocked={sparseEditing}
           visibleQuickAgents={visibleQuickAgents}
           defaultTuiAgent={defaultTuiAgent}
@@ -341,6 +366,7 @@ export default function NewWorkspaceComposerCard(
         />
         <NewWorkspaceComposerAdvancedSection
           {...props}
+          selectedRepo={selectedRepo}
           onSparseEditingChange={setSparseEditing}
           sparseEditing={sparseEditing}
           branchNameInputId={branchNameInputId}
@@ -361,6 +387,8 @@ export default function NewWorkspaceComposerCard(
         <div className="shrink-0 space-y-1">
           <NewWorkspaceComposerFooter
             {...props}
+            onCreate={handleCreate}
+            createDisabled={createDisabled}
             submitShortcutModifierLabel={getScreenSubmitModifierLabel()}
           />
         </div>

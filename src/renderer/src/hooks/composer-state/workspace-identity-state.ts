@@ -17,6 +17,7 @@ type WorkspaceIdentityStateInput = Pick<
 
 import { useState, useMemo } from 'react'
 import { getLinkedWorkItemProvider, isGitLabIssueUrl } from '@/lib/new-workspace'
+import { isValidGitLabFeatureName } from '../../../../shared/gitlab-feature-name'
 import {
   type SmartNameMode,
   isBlockingJiraUrlIntent
@@ -129,8 +130,12 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
 
   const [smartNameMode, setSmartNameMode] = useState<SmartNameMode>('smart')
 
-  // Why: a pasted Jira URL is not a workspace name yet — block create until it resolves to an issue.
-  const sourceIntentBlocksCreate = !linkedWorkItem && isBlockingJiraUrlIntent(smartNameMode, name)
+  // Block unresolved Jira URLs and GitLab issues that lack a valid manual feature name.
+  const sourceIntentBlocksCreate =
+    (!linkedWorkItem && isBlockingJiraUrlIntent(smartNameMode, name)) ||
+    (linkedWorkItem?.provider === 'gitlab' &&
+      linkedWorkItem.type === 'issue' &&
+      !isValidGitLabFeatureName(branchNameOverride))
 
   // Why (#5181): reuseEligibleBranch = local branch name eligible for checkout-reuse (null if none); reuseSelectedBranch = the checkbox that enacts it.
   const [reuseEligibleBranch, setReuseEligibleBranch] = useState<string | null>(null)

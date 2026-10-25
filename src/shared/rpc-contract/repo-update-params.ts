@@ -9,6 +9,7 @@ import {
   normalizeWorktreeVisibilitySourcePreferences
 } from '../worktree/visibility-sources'
 import { OptionalFiniteNumber, OptionalString } from './rpc-param-primitives'
+import { normalizeGitLabPromotionWorkflow } from '../gitlab-promotion-workflow'
 
 export const RepoSourceControlAiOverrides = z
   .unknown()
@@ -89,7 +90,8 @@ export function createRepoUpdateSchema<T extends Readonly<Record<string, z.ZodTy
       externalWorktreeDiscoverySuppressedAt: z.number().finite().nullable().optional(),
       projectGroupId: OptionalString.nullable().optional(),
       projectGroupOrder: OptionalFiniteNumber,
-      sourceControlAi: RepoSourceControlAiOverrides
+      sourceControlAi: RepoSourceControlAiOverrides,
+      gitLabPromotion: z.unknown().optional().transform(normalizeGitLabPromotionWorkflow)
     })
   })
 }

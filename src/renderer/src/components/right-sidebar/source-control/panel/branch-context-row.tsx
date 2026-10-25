@@ -20,12 +20,14 @@ function BaseRefButton({
   baseRef,
   displayLabel,
   onClick,
-  title
+  title,
+  badge
 }: {
   baseRef: string
   displayLabel: string
   onClick: () => void
   title: string
+  badge?: boolean
 }): React.JSX.Element {
   const accessibleName = translate(
     'auto.components.right.sidebar.SourceControl.c7d4e2f801',
@@ -35,7 +37,12 @@ function BaseRefButton({
   return (
     <button
       type="button"
-      className="min-w-0 max-w-full truncate rounded-sm border-0 bg-transparent p-0 text-left font-mono text-[10.5px] font-medium text-foreground/90 underline decoration-border underline-offset-2 hover:text-foreground hover:decoration-foreground"
+      className={cn(
+        'min-w-0 max-w-full truncate rounded-sm border-0 text-left font-mono text-[10.5px] font-medium text-foreground/90 hover:text-foreground',
+        badge
+          ? 'bg-muted px-1.5 py-0.5'
+          : 'bg-transparent p-0 underline decoration-border underline-offset-2 hover:decoration-foreground'
+      )}
       onClick={onClick}
       title={`${title} (${baseRef})`}
       aria-label={accessibleName}
@@ -172,6 +179,7 @@ function BaseLine({
   onChangeBaseRef,
   changeBaseTitle,
   showArrow,
+  baseCaption,
   leading,
   trailing
 }: {
@@ -180,13 +188,16 @@ function BaseLine({
   onChangeBaseRef: () => void
   changeBaseTitle: string
   showArrow: boolean
+  baseCaption?: string
   leading?: React.ReactNode
   trailing?: React.ReactNode
 }): React.JSX.Element {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       {leading}
-      {showArrow ? (
+      {baseCaption ? (
+        <span className="shrink-0 text-muted-foreground">{baseCaption}</span>
+      ) : showArrow ? (
         <span className="shrink-0 text-muted-foreground/70" aria-hidden="true">
           →
         </span>
@@ -201,6 +212,7 @@ function BaseLine({
           displayLabel={baseLabel}
           onClick={onChangeBaseRef}
           title={changeBaseTitle}
+          badge={Boolean(baseCaption)}
         />
       </span>
       {trailing}
@@ -218,7 +230,8 @@ function StackedCompareFlow({
   changeBaseTitle,
   leading,
   trailing,
-  headTrailing
+  headTrailing,
+  baseCaption
 }: {
   headDisplay: WorktreeGitIdentityDisplay | null
   baseRef: string
@@ -228,6 +241,7 @@ function StackedCompareFlow({
   leading?: React.ReactNode
   trailing?: React.ReactNode
   headTrailing?: React.ReactNode
+  baseCaption?: string
 }): React.JSX.Element {
   if (!headDisplay) {
     return (
@@ -237,6 +251,7 @@ function StackedCompareFlow({
         onChangeBaseRef={onChangeBaseRef}
         changeBaseTitle={changeBaseTitle}
         showArrow={false}
+        baseCaption={baseCaption}
         leading={leading}
         // Why: no head line exists to host it, so fold it onto the base line
         // rather than dropping it.
@@ -269,6 +284,7 @@ function StackedCompareFlow({
         onChangeBaseRef={onChangeBaseRef}
         changeBaseTitle={changeBaseTitle}
         showArrow
+        baseCaption={baseCaption}
         leading={leading}
         trailing={trailing}
       />
@@ -283,7 +299,8 @@ export function SourceControlBranchContextRow({
   manualReviewUrl,
   branchLineTotal,
   onChangeBaseRef,
-  onRetry
+  onRetry,
+  baseCaption
 }: {
   summary: GitBranchCompareSummary | null
   compareBaseRef: string | null
@@ -292,6 +309,7 @@ export function SourceControlBranchContextRow({
   branchLineTotal?: GitBranchLineTotal | null
   onChangeBaseRef: () => void
   onRetry: () => void
+  baseCaption?: string
 }): React.JSX.Element | null {
   const displayedBaseRef = resolveSourceControlDisplayedBaseRef(summary, compareBaseRef)
 
@@ -336,6 +354,7 @@ export function SourceControlBranchContextRow({
           baseLabel={baseLabel}
           onChangeBaseRef={onChangeBaseRef}
           changeBaseTitle={changeBaseTitle}
+          baseCaption={baseCaption}
           leading={<Loader2 className="size-3 shrink-0 animate-spin" aria-hidden="true" />}
           trailing={<ManualReviewLinkButton url={manualReviewUrl} />}
         />
@@ -358,6 +377,7 @@ export function SourceControlBranchContextRow({
           baseLabel={baseLabel}
           onChangeBaseRef={onChangeBaseRef}
           changeBaseTitle={changeBaseTitle}
+          baseCaption={baseCaption}
           trailing={
             <>
               <ManualReviewLinkButton url={manualReviewUrl} />
@@ -396,6 +416,7 @@ export function SourceControlBranchContextRow({
         baseLabel={baseLabel}
         onChangeBaseRef={onChangeBaseRef}
         changeBaseTitle={changeBaseTitle}
+        baseCaption={baseCaption}
         trailing={
           <>
             {compareStatNodes}

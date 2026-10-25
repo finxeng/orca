@@ -15,7 +15,8 @@ export function CommitMessageComposer({
   onCancelGenerate,
   isGenerateDisabled,
   onGenerate,
-  generateTooltip
+  generateTooltip,
+  placeholder
 }: {
   rows: number
   commitMessage: string
@@ -28,6 +29,7 @@ export function CommitMessageComposer({
   isGenerateDisabled: boolean
   onGenerate: () => void
   generateTooltip?: string
+  placeholder?: string
 }): React.JSX.Element {
   return (
     <div className="relative">
@@ -36,7 +38,10 @@ export function CommitMessageComposer({
         value={commitMessage}
         disabled={disabled}
         onChange={(e) => onCommitMessageChange(e.target.value)}
-        placeholder={translate('auto.components.right.sidebar.SourceControl.0d0a8359d3', 'Message')}
+        placeholder={
+          placeholder ??
+          translate('auto.components.right.sidebar.SourceControl.0d0a8359d3', 'Message')
+        }
         aria-label={translate(
           'auto.components.right.sidebar.SourceControl.b94112eb9e',
           'Commit message'

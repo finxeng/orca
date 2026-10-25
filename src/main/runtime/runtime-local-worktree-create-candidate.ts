@@ -35,6 +35,10 @@ import { runtimePathExists } from './runtime-worktree-filesystem'
 import { findPendingWorktreeRemovalConflict } from '../worktree-removal-table'
 import type { RuntimeStore } from './runtime-store-contract'
 import type { HostedReviewExecutionOptions } from '../source-control/hosted-review-git-options'
+import {
+  formatGitLabFeatureBranchName,
+  type GitLabFeatureBranchName
+} from '../gitlab/feature-branch-name'
 
 export type RuntimeLocalWorktreeCreateCandidate = {
   effectiveRequestedName: string
@@ -56,6 +60,7 @@ export async function resolveRuntimeLocalWorktreeCreateCandidate(args: {
   worktreePathSettings: ReturnType<typeof getWorktreePathSettings>
   workspaceRoot: string
   username: string
+  featureBranch?: GitLabFeatureBranchName | null
   store?: RuntimeStore
   baseBranch: string
   localWorktreeGitOptions: { wslDistro?: string }
@@ -105,7 +110,9 @@ export async function resolveRuntimeLocalWorktreeCreateCandidate(args: {
     branchName = await resolveCreateBranchName(
       args.repo.path,
       selectedExistingLocalBranchName ??
-        getBranchNameOverrideCandidate(args.request.branchNameOverride, suffix),
+        (args.featureBranch
+          ? formatGitLabFeatureBranchName(args.featureBranch, suffix)
+          : getBranchNameOverrideCandidate(args.request.branchNameOverride, suffix)),
       effectiveSanitizedName,
       args.settings,
       args.username,

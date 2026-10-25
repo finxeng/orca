@@ -1,7 +1,10 @@
 import type { CommitMessageDraftContext } from '../../shared/commit-message-generation'
 import { getCommitMessageModelDiscoveryHostKey } from '../../shared/commit-message-host-key'
 import type { HostedReviewProvider } from '../../shared/hosted-review'
-import { withLinkedIssueDraftContext } from '../../shared/source-control-ai-action-variables'
+import {
+  sourceControlLinkedIssueNumber,
+  withLinkedIssueDraftContext
+} from '../../shared/source-control-ai-action-variables'
 import type { TuiAgent } from '../../shared/tui-agent'
 import { getStagedCommitContext } from '../git/status'
 import { SSH_HOST_NOT_SERVED_MESSAGE } from '../providers/ssh-host-not-served-error'
@@ -180,7 +183,10 @@ export class RuntimeGitGenerationCommands {
     }
     const linkedIssueDetails = await linkedIssueDetailsPromise
     context = {
-      ...withLinkedIssueDraftContext(context, issueMeta?.linkedIssue),
+      ...withLinkedIssueDraftContext(
+        context,
+        sourceControlLinkedIssueNumber(issueMeta, input.provider)
+      ),
       ...(input.provider ? { provider: input.provider } : {}),
       ...(linkedIssueDetails ? { linkedIssueDetails } : {})
     }

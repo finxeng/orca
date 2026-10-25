@@ -46,6 +46,7 @@ type RepositoryUpdates = Partial<
     | 'agentWorktreeVisibility'
     | 'projectGroupId'
     | 'projectGroupOrder'
+    | 'gitLabPromotion'
   >
 > & {
   sourceControlAi?: Repo['sourceControlAi'] | null

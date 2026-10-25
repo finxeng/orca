@@ -5,6 +5,7 @@ import { normalizeRepoBadgeColor } from '../../../shared/repo-badge-color'
 import { sanitizeRepoIcon } from '../../../shared/repo-icon'
 import { normalizeGhAccountBinding } from '../../../shared/github/account-binding'
 import { normalizeJiraProjectReference } from '../../../shared/jira/jira-project-reference'
+import { normalizeGitLabPromotionWorkflow } from '../../../shared/gitlab-promotion-workflow'
 import type { GhAccountBinding } from '../../../shared/github/account-binding'
 import {
   normalizeCustomWorktreeVisibilitySources,
@@ -80,6 +81,7 @@ export function sanitizeRepoUpdatesForPersistence<
       | 'projectHostSetupMethod'
       | 'forkSyncMode'
       | 'defaultJiraProject'
+      | 'gitLabPromotion'
       | 'customWorktreeVisibilitySources'
       | 'worktreeVisibilitySourcePreferences'
     >
@@ -88,6 +90,14 @@ export function sanitizeRepoUpdatesForPersistence<
   }
 >(updates: T): T {
   const sanitized = { ...updates }
+  if ('gitLabPromotion' in sanitized) {
+    const workflow = normalizeGitLabPromotionWorkflow(sanitized.gitLabPromotion)
+    if (workflow) {
+      sanitized.gitLabPromotion = workflow
+    } else {
+      delete sanitized.gitLabPromotion
+    }
+  }
   if ('defaultJiraProject' in sanitized) {
     const reference = normalizeJiraProjectReference(sanitized.defaultJiraProject)
     if (reference === undefined) {

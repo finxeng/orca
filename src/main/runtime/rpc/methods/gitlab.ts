@@ -6,12 +6,16 @@ import {
   AddMRComment,
   AddMRInlineComment,
   CreateIssue,
+  CreateReleaseBranch,
+  CreatePromotionMR,
+  CreateReleaseTag,
   EmptyParams,
   GitLabRateLimit,
   IssuesList,
   JobTrace,
   MergeMr,
   RepoSelector,
+  ReleaseBranchInfo,
   ResolveMRDiscussion,
   RetryJob,
   UpdateIssue,
@@ -24,6 +28,40 @@ import {
 } from '../../../../shared/rpc-contract/gitlab-params'
 
 export const GITLAB_METHODS = [
+  defineMethod({
+    name: 'gitlab.createPromotionMR',
+    permission: 'workspace',
+    params: CreatePromotionMR,
+    handler: async (params, { runtime }) =>
+      runtime.createGitLabRepoPromotionMR(
+        params.repo,
+        params.source,
+        params.target,
+        params.expectedSha,
+        params.issueNumbers
+      )
+  }),
+  defineMethod({
+    name: 'gitlab.releaseBranchInfo',
+    permission: 'workspace',
+    params: ReleaseBranchInfo,
+    handler: async (params, { runtime }) =>
+      runtime.getGitLabRepoReleaseBranchInfo(params.repo, params.branch)
+  }),
+  defineMethod({
+    name: 'gitlab.createReleaseBranch',
+    permission: 'workspace',
+    params: CreateReleaseBranch,
+    handler: async (params, { runtime }) =>
+      runtime.createGitLabRepoReleaseBranch(params.repo, params.branch, params.expectedDefaultSha)
+  }),
+  defineMethod({
+    name: 'gitlab.createReleaseTag',
+    permission: 'workspace',
+    params: CreateReleaseTag,
+    handler: async (params, { runtime }) =>
+      runtime.createGitLabRepoReleaseTag(params.repo, params.branch, params.tag, params.expectedSha)
+  }),
   defineMethod({
     name: 'gitlab.listMRs',
     permission: 'workspace',

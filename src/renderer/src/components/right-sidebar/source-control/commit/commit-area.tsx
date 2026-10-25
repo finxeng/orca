@@ -54,6 +54,7 @@ export function CommitArea({
   isCreatingPr = false,
   isCreatePrIntentInFlight = false,
   showComposer = true,
+  promotionFeature = false,
   sourceControlAiActionsVisible,
   aiAgentConfigured,
   isGenerating,
@@ -108,7 +109,25 @@ export function CommitArea({
         : false,
     [commitError, commitFailureSummary]
   )
-  const PrimaryIcon = PRIMARY_ICONS[primaryAction.kind]
+  const displayPrimaryAction: PrimaryAction =
+    promotionFeature &&
+    (primaryAction.kind === 'stage' ||
+      primaryAction.kind === 'create_pr' ||
+      primaryAction.kind === 'create_pr_intent')
+      ? {
+          kind: 'commit',
+          label: translate(
+            'auto.components.right.sidebar.source.control.primary.action.ed93b4f14f',
+            'Commit'
+          ),
+          title: translate(
+            'gitlabPromotion.stageBeforeCommit',
+            'Stage files and enter a message to commit.'
+          ),
+          disabled: true
+        }
+      : primaryAction
+  const PrimaryIcon = PRIMARY_ICONS[displayPrimaryAction.kind]
   const hasMessage = commitMessage.trim().length > 0
   const isCommitMessageDisabled = isCommitMessageFieldDisabled({
     stagedCount,
@@ -167,42 +186,47 @@ export function CommitArea({
   )
   const dropdownMenuContent = (
     <DropdownMenuContent align="end" className="min-w-[14rem]">
-      {dropdownItems.map((entry) =>
-        entry.kind === 'separator' ? (
-          <DropdownMenuSeparator key={entry.id} />
-        ) : (
-          <Tooltip key={entry.kind}>
-            <TooltipTrigger asChild>
-              <div className="block">
-                <DropdownMenuItem
-                  disabled={entry.disabled}
-                  variant={entry.variant}
-                  className="w-full"
-                  onSelect={(event) => {
-                    if (entry.disabled) {
-                      event.preventDefault()
-                      return
-                    }
-                    onDropdownAction(entry.kind)
-                  }}
-                >
-                  <span className="flex min-w-0 flex-col">
-                    <span>{entry.label}</span>
-                    {entry.hint ? (
-                      <span className="truncate text-[10px] text-muted-foreground">
-                        {entry.hint}
-                      </span>
-                    ) : null}
-                  </span>
-                </DropdownMenuItem>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="left" sideOffset={8} className="max-w-72">
-              {entry.title}
-            </TooltipContent>
-          </Tooltip>
+      {dropdownItems
+        .filter(
+          (entry) =>
+            !promotionFeature || (entry.kind !== 'create_pr' && entry.kind !== 'push_create_pr')
         )
-      )}
+        .map((entry) =>
+          entry.kind === 'separator' ? (
+            <DropdownMenuSeparator key={entry.id} />
+          ) : (
+            <Tooltip key={entry.kind}>
+              <TooltipTrigger asChild>
+                <div className="block">
+                  <DropdownMenuItem
+                    disabled={entry.disabled}
+                    variant={entry.variant}
+                    className="w-full"
+                    onSelect={(event) => {
+                      if (entry.disabled) {
+                        event.preventDefault()
+                        return
+                      }
+                      onDropdownAction(entry.kind)
+                    }}
+                  >
+                    <span className="flex min-w-0 flex-col">
+                      <span>{entry.label}</span>
+                      {entry.hint ? (
+                        <span className="truncate text-[10px] text-muted-foreground">
+                          {entry.hint}
+                        </span>
+                      ) : null}
+                    </span>
+                  </DropdownMenuItem>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="left" sideOffset={8} className="max-w-72">
+                {entry.title}
+              </TooltipContent>
+            </Tooltip>
+          )
+        )}
     </DropdownMenuContent>
   )
 
@@ -221,17 +245,31 @@ export function CommitArea({
           isGenerateDisabled={isGenerateDisabled}
           onGenerate={onGenerate}
           generateTooltip={generateTooltip}
+          placeholder={
+            promotionFeature
+              ? translate('gitlabPromotion.commitMessageHint', 'Enter a commit message')
+              : undefined
+          }
         />
+      ) : null}
+      {promotionFeature && showComposer && displayPrimaryAction.disabled ? (
+        <p className="mt-1 text-2xs text-muted-foreground">
+          {translate(
+            'gitlabPromotion.stageBeforeCommit',
+            'Stage files and enter a message to commit.'
+          )}
+        </p>
       ) : null}
       <CommitActionMenu
         showComposer={showComposer}
-        primaryAction={primaryAction}
+        primaryAction={displayPrimaryAction}
         PrimaryIcon={PrimaryIcon}
         showSpinner={showSpinner}
         showChevronSpinner={showChevronSpinner}
         moreCommitAndRemoteActionsLabel={moreCommitAndRemoteActionsLabel}
         dropdownMenuContent={dropdownMenuContent}
         onPrimaryAction={onPrimaryAction}
+        promotionFeature={promotionFeature}
       />
       <CommitNotices
         worktreeId={worktreeId}

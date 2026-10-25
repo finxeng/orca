@@ -83,15 +83,19 @@ describe('workspace details exact host selection', () => {
   afterEach(cleanup)
 
   it.each([
-    ['local', '/local', 'Local task', 'Remote task'],
-    ['ssh:box', '/remote', 'Remote task', 'Local task']
+    ['local', '/local', 'Local task', 'Remote task', 'local-branch'],
+    ['ssh:box', '/remote', 'Remote task', 'Local task', 'remote-branch']
   ])(
     'seeds the %s workspace and repository with duplicate IDs',
-    async (host, path, shown, hidden) => {
-      open(host)
+    async (host, path, shown, hidden, branch) => {
+      open(host, [
+        { ...workspace(), branch: 'local-branch' },
+        { ...workspace('ssh:box'), branch: 'remote-branch' }
+      ])
       expect(screen.getByTestId('owner-repo').textContent).toBe(path)
       expect(screen.getByText(shown)).toBeTruthy()
       expect(screen.queryByText(hidden)).toBeNull()
+      expect(screen.getByText(branch)).toBeTruthy()
       fireEvent.click(screen.getByRole('button', { name: 'Save' }))
       await waitFor(() =>
         expect(update).toHaveBeenCalledWith('shared-id', {}, { executionHostId: host })

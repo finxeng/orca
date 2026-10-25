@@ -30,6 +30,7 @@ import { RepositoryWindowsRuntimeSection } from './RepositoryWindowsRuntimeSecti
 import { matchesRepositoryIdentitySearch } from './repository/identity/repository-identity-search'
 import { RepositoryWorktreeDefaultsSection } from './repository/execution/RepositoryWorktreeDefaultsSection'
 import { RepositoryJiraProjectSection } from './repository/RepositoryJiraProjectSection'
+import { RepositoryGitLabPromotionSection } from './RepositoryGitLabPromotionSection'
 import { getProjectRuntimeSessionSummary } from './repository-runtime-session-summary'
 import { getRepoOwnerWorktreeVisibilityDefaults } from '../../store/worktree-visibility-defaults-by-host'
 export { getRepositoryPaneSearchEntries }
@@ -369,6 +370,16 @@ export function RepositoryPane({
       </section>
     ) : null,
     hooksSection,
+    !isFolder &&
+    (forceFullPaneForRepoMatch ||
+      !searchQuery ||
+      /gitlab|release|发布|流程|promotion/i.test(searchQuery)) ? (
+      <RepositoryGitLabPromotionSection
+        key={`gitlab-promotion:${selectedHostId}:${repo.id}`}
+        repo={repo}
+        updateRepo={updateSelectedRepo}
+      />
+    ) : null,
     !isFolder &&
     (forceFullPaneForRepoMatch || matchesSettingsSearch(searchQuery, sourceControlAiEntries)) ? (
       <RepositorySourceControlAiSection

@@ -32,7 +32,8 @@ type GitLabRawMR = Parameters<typeof mapMRToWorkItem>[0] & {
   description?: string | null
   sha?: string
   diff_refs?: { base_sha?: string; head_sha?: string; start_sha?: string } | null
-  head_pipeline?: { id?: number } | null
+  head_pipeline?: { id?: number; status?: string } | null
+  pipeline?: { status?: string } | null
   reviewers?: GitLabRawUser[] | null
 }
 
@@ -169,6 +170,7 @@ async function fetchMRDetails(
     body: mrRaw.description ?? '',
     comments: flattenDiscussions(discussions),
     headSha: mrRaw.sha,
+    pipelineStatus: mrRaw.head_pipeline?.status ?? mrRaw.pipeline?.status,
     baseSha: mrRaw.diff_refs?.base_sha,
     startSha: mrRaw.diff_refs?.start_sha,
     files,

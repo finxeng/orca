@@ -1,4 +1,5 @@
 import type { AiActionId } from './source-control-ai-actions'
+import type { HostedReviewProvider } from './hosted-review'
 
 /**
  * Registering a variable a hover card cannot describe is a compile error: the
@@ -86,7 +87,7 @@ export const SOURCE_CONTROL_ACTION_VARIABLE_INFO = {
   },
   linkedIssue: {
     description:
-      'The GitHub issue number linked to this workspace. Empty when no GitHub issue is linked (including GitLab-linked workspaces). Prefer instructional templates: a bare "Fixes #{linkedIssue}" becomes "Fixes #" when unlinked.',
+      'The issue number linked to this workspace for the active GitHub or GitLab review. Empty when no matching issue is linked or the provider is ambiguous. Include a closing keyword only when the issue should be closed.',
     example: '123'
   }
 } satisfies Record<string, SourceControlActionVariableInfo>
@@ -104,8 +105,46 @@ export function isLinkedIssueNumber(linkedIssue: unknown): linkedIssue is number
   return typeof linkedIssue === 'number' && Number.isSafeInteger(linkedIssue) && linkedIssue > 0
 }
 
+export function sourceControlLinkedIssueNumber(
+  meta:
+    | {
+        linkedIssue?: number | null
+        linkedGitLabIssue?: number | null
+        linkedWorkItem?: {
+          provider: string
+          type: string
+          number: number
+        } | null
+      }
+    | null
+    | undefined,
+  provider?: HostedReviewProvider | null
+): number | null {
+  const linkedItem = meta?.linkedWorkItem?.type === 'issue' ? meta.linkedWorkItem : null
+  const github = isLinkedIssueNumber(meta?.linkedIssue)
+    ? meta.linkedIssue
+    : linkedItem?.provider === 'github' && isLinkedIssueNumber(linkedItem.number)
+      ? linkedItem.number
+      : null
+  const gitlab = isLinkedIssueNumber(meta?.linkedGitLabIssue)
+    ? meta.linkedGitLabIssue
+    : linkedItem?.provider === 'gitlab' && isLinkedIssueNumber(linkedItem.number)
+      ? linkedItem.number
+      : null
+  if (provider === 'github') {
+    return github
+  }
+  if (provider === 'gitlab') {
+    return gitlab
+  }
+  if (provider) {
+    return null
+  }
+  return github === null ? gitlab : gitlab === null ? github : null
+}
+
 /**
- * Render the workspace-linked GitHub issue for template substitution. Anything
+ * Render the workspace-linked issue for template substitution. Anything
  * that is not a positive integer becomes `''` so the token expands to nothing
  * instead of leaking into the prompt.
  */

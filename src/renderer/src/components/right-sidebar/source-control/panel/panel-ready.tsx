@@ -4,10 +4,15 @@ import { SourceControlNotesShelf } from '../notes/notes-shelf'
 import { SourceControlPanelContent } from './panel-content'
 import { SourceControlPanelDialogs } from './panel-dialogs'
 import type { SourceControlPanelReadyProps } from './panel-props'
+import { GitLabPromotionWorkspaceEntry } from '../promotion/GitLabPromotionWorkspaceEntry'
+import { getWorkspaceAttachments } from '../../../../../../shared/workspace-attachments'
 
 /** The panel chrome: toolbar, notes shelf, the scrolling file surface, bulk bar and dialog layer. */
 export function SourceControlPanelReady(props: SourceControlPanelReadyProps) {
   const { model, worktreePath } = props
+  const promotionFeature = Boolean(
+    props.activeRepo.gitLabPromotion && model.branchName.startsWith('feature-')
+  )
   const {
     activeGroupId,
     activeWorktreeId,
@@ -90,6 +95,18 @@ export function SourceControlPanelReady(props: SourceControlPanelReadyProps) {
           compareBaseRef={compareBaseRef}
           headDisplay={gitIdentityDisplay}
           manualReviewUrl={manualReviewUrl}
+          promotionFeature={promotionFeature}
+        />
+
+        <GitLabPromotionWorkspaceEntry
+          repo={props.activeRepo}
+          branch={model.branchName}
+          headSha={activeWorktreeId ? (model.activeGitStatusHead ?? null) : null}
+          hasUncommittedChanges={model.hasUncommittedEntries}
+          upstreamStatus={model.remoteStatus}
+          issueNumbers={getWorkspaceAttachments(props.activeWorktree)
+            .filter((item) => item.provider === 'gitlab' && item.type === 'issue')
+            .map((item) => item.number)}
         />
 
         {/* Why: hidden when count is 0 — notes are created from the diff view, so an empty Notes shelf here is pure chrome. */}

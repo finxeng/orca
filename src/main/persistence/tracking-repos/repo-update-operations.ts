@@ -121,6 +121,7 @@ export class RepoUpdatePersistenceOperations {
         | 'worktreeVisibilitySourcePreferences'
         | 'projectGroupId'
         | 'projectGroupOrder'
+        | 'gitLabPromotion'
         | 'projectHostSetupMethod'
       >
     > & {

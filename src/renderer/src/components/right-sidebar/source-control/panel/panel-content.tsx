@@ -12,6 +12,9 @@ import type { SourceControlPanelReadyProps } from './panel-props'
 /** The scrolling surface: status, commit affordances, the file sections and the history dock. */
 export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const { activeWorktree, currentWorktreeId, model, worktreePath } = props
+  const promotionFeature = Boolean(
+    props.activeRepo.gitLabPromotion && model.branchName.startsWith('feature-')
+  )
   const {
     activeConnectionId,
     activeOpenRowKeys,
@@ -80,6 +83,13 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
   const hasFilteredBranchEntries = filteredBranchEntries.length > 0
   const showGenericEmptyState =
     !hasUncommittedEntries && branchSummary?.status === 'ready' && branchEntries.length === 0
+  const commitSurface = shouldRenderCommitArea(unresolvedConflicts.length, conflictOperation) ? (
+    <SourceControlCommitSurface
+      {...props}
+      showGenericEmptyState={showGenericEmptyState}
+      promotionFeature={promotionFeature}
+    />
+  ) : null
 
   return (
     <>
@@ -116,64 +126,67 @@ export function SourceControlPanelContent(props: SourceControlPanelReadyProps) {
       {/* Why: keep CommitArea mounted across normal states — gating on hasUncommittedEntries (#1448) would unmount the action surface on clean worktrees and mid-commit as the staged list clears. Active merge/rebase/cherry-pick is the exception. */}
       <SourceControlForkPushNotice pushTarget={activeWorktree.pushTarget ?? null} />
 
-      {shouldRenderCommitArea(unresolvedConflicts.length, conflictOperation) && (
-        <SourceControlCommitSurface {...props} showGenericEmptyState={showGenericEmptyState} />
-      )}
+      {!promotionFeature ? commitSurface : null}
 
       {hasFilteredUncommittedEntries && (
-        <SourceControlUncommittedSections
-          displaySections={displaySections}
-          unfilteredDisplaySectionsById={unfilteredDisplaySectionsById}
-          normalizedFilter={normalizedFilter}
-          collapsedSections={collapsedSections}
-          toggleSection={toggleSection}
-          onViewSection={(sectionViewAction) => {
-            if (sectionViewAction.kind === 'conflict-review') {
-              openConflictReview(
-                currentWorktreeId,
-                worktreePath,
-                sectionViewAction.entries,
-                'live-summary'
-              )
-            } else {
-              openAllDiffs(
-                currentWorktreeId,
-                worktreePath,
-                undefined,
-                sectionViewAction.area,
-                sectionViewAction.entries
-              )
-            }
-          }}
-          isExecutingBulk={isExecutingBulk}
-          requestDiscardAllInArea={requestDiscardAllInArea}
-          handleStageAllPaths={handleStageAllPaths}
-          handleStageSectionPaths={handleStageSectionPaths}
-          handleUnstagePaths={handleUnstagePaths}
-          sourceControlViewMode={sourceControlViewMode}
-          visibleTreeRowsBySection={visibleTreeRowsBySection}
-          visibleListRowsBySection={visibleListRowsBySection}
-          fileListScrollElement={fileListScrollElement}
-          collapsedTreeDirs={collapsedTreeDirs}
-          toggleTreeDir={toggleTreeDir}
-          requestDiscardPaths={requestDiscardPaths}
-          expandedSubmoduleKeys={expandedSubmoduleKeys}
-          toggleSubmodule={toggleSubmodule}
-          currentWorktreeId={currentWorktreeId}
-          worktreePath={worktreePath}
-          selectedKeySet={selectedKeySet}
-          activeOpenRowKeys={activeOpenRowKeys}
-          handleSelect={handleSelect}
-          handleContextMenu={handleContextMenu}
-          revealInExplorer={revealInExplorer}
-          activeConnectionId={activeConnectionId}
-          handleOpenDiff={handleOpenDiff}
-          handleStage={handleStage}
-          handleUnstage={handleUnstage}
-          requestDiscardEntry={requestDiscardEntry}
-          diffCommentCountByPath={diffCommentCountByPath}
-        />
+        <div className={promotionFeature ? 'border-b border-border pb-3' : undefined}>
+          <SourceControlUncommittedSections
+            displaySections={displaySections}
+            unfilteredDisplaySectionsById={unfilteredDisplaySectionsById}
+            normalizedFilter={normalizedFilter}
+            collapsedSections={collapsedSections}
+            toggleSection={toggleSection}
+            onViewSection={(sectionViewAction) => {
+              if (sectionViewAction.kind === 'conflict-review') {
+                openConflictReview(
+                  currentWorktreeId,
+                  worktreePath,
+                  sectionViewAction.entries,
+                  'live-summary'
+                )
+              } else {
+                openAllDiffs(
+                  currentWorktreeId,
+                  worktreePath,
+                  undefined,
+                  sectionViewAction.area,
+                  sectionViewAction.entries
+                )
+              }
+            }}
+            isExecutingBulk={isExecutingBulk}
+            requestDiscardAllInArea={requestDiscardAllInArea}
+            handleStageAllPaths={handleStageAllPaths}
+            handleStageSectionPaths={handleStageSectionPaths}
+            handleUnstagePaths={handleUnstagePaths}
+            sourceControlViewMode={sourceControlViewMode}
+            visibleTreeRowsBySection={visibleTreeRowsBySection}
+            visibleListRowsBySection={visibleListRowsBySection}
+            fileListScrollElement={fileListScrollElement}
+            collapsedTreeDirs={collapsedTreeDirs}
+            toggleTreeDir={toggleTreeDir}
+            requestDiscardPaths={requestDiscardPaths}
+            expandedSubmoduleKeys={expandedSubmoduleKeys}
+            toggleSubmodule={toggleSubmodule}
+            currentWorktreeId={currentWorktreeId}
+            worktreePath={worktreePath}
+            selectedKeySet={selectedKeySet}
+            activeOpenRowKeys={activeOpenRowKeys}
+            handleSelect={handleSelect}
+            handleContextMenu={handleContextMenu}
+            revealInExplorer={revealInExplorer}
+            activeConnectionId={activeConnectionId}
+            handleOpenDiff={handleOpenDiff}
+            handleStage={handleStage}
+            handleUnstage={handleUnstage}
+            requestDiscardEntry={requestDiscardEntry}
+            diffCommentCountByPath={diffCommentCountByPath}
+            promotionFeature={promotionFeature}
+          />
+        </div>
       )}
+
+      {promotionFeature ? commitSurface : null}
 
       {shouldShowSourceControlCompareUnavailableCard(
         branchSummary,

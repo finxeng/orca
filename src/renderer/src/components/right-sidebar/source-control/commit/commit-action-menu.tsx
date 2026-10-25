@@ -15,7 +15,8 @@ export function CommitActionMenu({
   showChevronSpinner,
   moreCommitAndRemoteActionsLabel,
   dropdownMenuContent,
-  onPrimaryAction
+  onPrimaryAction,
+  promotionFeature = false
 }: {
   showComposer: boolean
   primaryAction: PrimaryAction
@@ -28,13 +29,20 @@ export function CommitActionMenu({
   moreCommitAndRemoteActionsLabel: string
   dropdownMenuContent: React.ReactNode
   onPrimaryAction: () => void
+  promotionFeature?: boolean
 }): React.JSX.Element {
   return (
     // Why: action + chevron form one split button so the edit → commit → push loop stays in a single vertical band.
-    <div className={cn('flex items-stretch gap-1', showComposer && 'mt-1')}>
-      <div className="flex flex-1 items-stretch">
+    <div
+      className={cn(
+        'flex items-stretch gap-1',
+        showComposer && 'mt-1',
+        promotionFeature && 'justify-end'
+      )}
+    >
+      <div className={cn('flex items-stretch', !promotionFeature && 'flex-1')}>
         <PrimaryActionTooltip action={primaryAction} side="top">
-          <span className="flex flex-1">
+          <span className={cn('flex', !promotionFeature && 'flex-1')}>
             <Button
               type="button"
               variant="outline"

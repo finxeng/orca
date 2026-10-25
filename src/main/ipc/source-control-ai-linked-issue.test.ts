@@ -8,7 +8,16 @@ const LOCAL_ID = `repo-1::${LOCAL_PATH}`
 const REMOTE_PATH = '/home/tester/wt'
 const REMOTE_ID = `repo-1::${REMOTE_PATH}`
 
-function makeStore(meta: Record<string, { linkedIssue?: number | null }>): Store {
+function makeStore(
+  meta: Record<
+    string,
+    {
+      linkedIssue?: number | null
+      linkedGitLabIssue?: number | null
+      linkedWorkItem?: { provider: 'gitlab'; type: 'issue'; number: number }
+    }
+  >
+): Store {
   return {
     getWorktreeMeta: vi.fn((worktreeId: string) => meta[worktreeId])
   } as unknown as Store
@@ -155,7 +164,7 @@ describe('resolveSourceControlAiLinkedIssue', () => {
     }
   })
 
-  it('does not fall back to a GitLab-linked issue', () => {
+  it('reads a GitLab-linked issue when it is the only linked provider', () => {
     const store = {
       getWorktreeMeta: vi.fn(() => ({ linkedIssue: null, linkedGitLabIssue: 456 }))
     } as unknown as Store
@@ -165,6 +174,30 @@ describe('resolveSourceControlAiLinkedIssue', () => {
         worktreeId: LOCAL_ID,
         worktreePath: LOCAL_PATH
       })
-    ).toBeNull()
+    ).toBe(456)
+  })
+
+  it('selects the issue for the requested review provider', () => {
+    const store = makeStore({
+      [LOCAL_ID]: { linkedIssue: 123, linkedGitLabIssue: 456 }
+    })
+    const args = { worktreeId: LOCAL_ID, worktreePath: LOCAL_PATH }
+    expect(resolveSourceControlAiLinkedIssue(store, args)).toBeNull()
+    expect(resolveSourceControlAiLinkedIssue(store, args, undefined, 'github')).toBe(123)
+    expect(resolveSourceControlAiLinkedIssue(store, args, undefined, 'gitlab')).toBe(456)
+  })
+
+  it('reads a GitLab work item when the legacy number slot is absent', () => {
+    const store = makeStore({
+      [LOCAL_ID]: {
+        linkedWorkItem: { provider: 'gitlab', type: 'issue', number: 789 }
+      }
+    })
+    expect(
+      resolveSourceControlAiLinkedIssue(store, {
+        worktreeId: LOCAL_ID,
+        worktreePath: LOCAL_PATH
+      })
+    ).toBe(789)
   })
 })

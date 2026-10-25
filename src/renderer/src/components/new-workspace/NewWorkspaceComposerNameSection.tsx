@@ -3,6 +3,7 @@ import { AlertTriangle, Check } from 'lucide-react'
 import SmartWorkspaceNameField from '@/components/new-workspace/SmartWorkspaceNameField'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
+import { isValidGitLabFeatureName } from '../../../../shared/gitlab-feature-name'
 import { shouldShowComposerBaseRefPicker } from './base-ref-picker-visibility'
 import { ComposerBaseRefPicker } from './ComposerBaseRefPicker'
 import type { NewWorkspaceComposerCardProps } from './new-workspace-composer-card-props'
@@ -15,7 +16,10 @@ type NewWorkspaceComposerNameSectionProps = Pick<
   | 'repoId'
   | 'onRepoChange'
   | 'name'
+  | 'linkedWorkItem'
   | 'onNameValueChange'
+  | 'branchNameOverride'
+  | 'onBranchNameOverrideChange'
   | 'onSmartGitHubItemSelect'
   | 'onSmartGitLabItemSelect'
   | 'onSmartBranchSelect'
@@ -43,6 +47,7 @@ type NewWorkspaceComposerNameSectionProps = Pick<
   | 'onBaseBranchChange'
   | 'startFromResetHint'
 > & {
+  branchNameInputId: string
   onNamePlainEnter: () => void
 }
 
@@ -53,7 +58,11 @@ export function NewWorkspaceComposerNameSection({
   repoId,
   onRepoChange,
   name,
+  linkedWorkItem,
   onNameValueChange,
+  branchNameOverride,
+  onBranchNameOverrideChange,
+  branchNameInputId,
   onSmartGitHubItemSelect,
   onSmartGitLabItemSelect,
   onSmartBranchSelect,
@@ -82,6 +91,16 @@ export function NewWorkspaceComposerNameSection({
   onBaseBranchChange,
   startFromResetHint
 }: NewWorkspaceComposerNameSectionProps): React.JSX.Element {
+  const showGitLabFeatureName =
+    (linkedWorkItem?.type === 'issue' &&
+      (linkedWorkItem.provider === 'gitlab' || smartNameSelection?.kind === 'gitlab-issue')) ||
+    (Boolean(selectedRepo?.gitLabPromotion) &&
+      smartNameSelection?.kind !== 'github-pr' &&
+      smartNameSelection?.kind !== 'gitlab-mr' &&
+      linkedWorkItem?.type !== 'pr' &&
+      linkedWorkItem?.type !== 'mr' &&
+      !reuseSelectedBranch)
+  const validGitLabFeatureName = isValidGitLabFeatureName(branchNameOverride)
   const showBaseRefPicker =
     Boolean(onBaseBranchChange) &&
     shouldShowComposerBaseRefPicker({
@@ -146,6 +165,46 @@ export function NewWorkspaceComposerNameSection({
         onActiveSourceModeChange={onSmartNameModeChange}
         onPlainEnter={onNamePlainEnter}
       />
+      {selectedRepoIsGit && branchesEnabled && showGitLabFeatureName ? (
+        <div className="space-y-1 pt-2">
+          <label htmlFor={branchNameInputId} className="text-xs font-medium text-muted-foreground">
+            {translate(
+              'auto.components.NewWorkspaceComposerCard.featureName',
+              'Branch feature name'
+            )}
+          </label>
+          <input
+            id={branchNameInputId}
+            type="text"
+            value={branchNameOverride ?? ''}
+            onChange={(event) => onBranchNameOverrideChange(event.target.value)}
+            maxLength={48}
+            required
+            aria-invalid={Boolean(branchNameOverride && !validGitLabFeatureName)}
+            placeholder="log4j2-schedule"
+            className="w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          />
+          <p
+            className={cn(
+              'text-xs',
+              branchNameOverride && !validGitLabFeatureName
+                ? 'text-destructive'
+                : 'text-muted-foreground'
+            )}
+          >
+            {validGitLabFeatureName
+              ? translate(
+                  'auto.components.NewWorkspaceComposerCard.featureBranchFormat',
+                  'New branch: feature-yyyyMMdd-{{name}}-GitLab username',
+                  { name: branchNameOverride }
+                )
+              : translate(
+                  'auto.components.NewWorkspaceComposerCard.featureNameRule',
+                  'Required. Use English letters, numbers, and hyphens only (up to 48 characters).'
+                )}
+          </p>
+        </div>
+      ) : null}
       {forkPushWarning ? (
         <p className="flex items-start gap-1.5 text-[11px] text-yellow-600 dark:text-yellow-500">
           <AlertTriangle className="mt-0.5 size-3 shrink-0" aria-hidden="true" />

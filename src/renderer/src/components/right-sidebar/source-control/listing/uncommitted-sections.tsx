@@ -86,6 +86,7 @@ export function SourceControlUncommittedSections(props: {
   handleUnstage: (path: string, oldPath?: string) => Promise<void>
   requestDiscardEntry: (entry: GitStatusEntry) => void
   diffCommentCountByPath: Map<string, number>
+  promotionFeature?: boolean
 }): React.JSX.Element {
   return (
     <>
@@ -102,16 +103,31 @@ export function SourceControlUncommittedSections(props: {
         const canStageAll = !props.normalizedFilter && stageAllPaths.length > 0
         const canUnstageAll = !props.normalizedFilter && unstageAllPaths.length > 0
         const canRevertAll = !props.normalizedFilter && discardAllPaths.length > 0
-        const sectionLabel = id === 'conflicts' ? CONFLICTS_SECTION_LABEL : SECTION_LABELS[area]
+        const sectionLabel =
+          id === 'conflicts'
+            ? CONFLICTS_SECTION_LABEL
+            : props.promotionFeature
+              ? area === 'staged'
+                ? { key: 'gitlabPromotion.stagedChanges', fallback: 'Staged changes' }
+                : { key: 'gitlabPromotion.uncommittedChanges', fallback: 'Uncommitted changes' }
+              : SECTION_LABELS[area]
         const sectionViewAction = getSourceControlSectionViewAction(actionSection)
         return (
-          <div key={id}>
+          <div
+            key={id}
+            className={
+              props.promotionFeature
+                ? 'mx-3 [&_[data-testid=source-control-entry]]:rounded-md [&_[data-testid=source-control-entry]]:bg-muted/60'
+                : undefined
+            }
+          >
             <SectionHeader
               label={translate(sectionLabel.key, sectionLabel.fallback)}
               count={items.length}
               conflictCount={items.filter((entry) => entry.conflictStatus === 'unresolved').length}
               isCollapsed={isCollapsed}
               onToggle={() => props.toggleSection(id)}
+              prominent={props.promotionFeature}
               actions={
                 <div className="flex items-center">
                   {canRevertAll && (
@@ -128,20 +144,38 @@ export function SourceControlUncommittedSections(props: {
                       disabled={props.isExecutingBulk}
                     />
                   )}
-                  {canStageAll && (
-                    <ActionButton
-                      icon={Plus}
-                      title={translate(
-                        'auto.components.right.sidebar.SourceControl.24d2598eff',
-                        'Stage all'
-                      )}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        void props.handleStageSectionPaths(id, stageAllPaths)
-                      }}
-                      disabled={props.isExecutingBulk}
-                    />
-                  )}
+                  {canStageAll &&
+                    (props.promotionFeature ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        disabled={props.isExecutingBulk}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void props.handleStageSectionPaths(id, stageAllPaths)
+                        }}
+                      >
+                        <Plus className="size-3" aria-hidden="true" />
+                        {translate(
+                          'auto.components.right.sidebar.SourceControl.24d2598eff',
+                          'Stage all'
+                        )}
+                      </Button>
+                    ) : (
+                      <ActionButton
+                        icon={Plus}
+                        title={translate(
+                          'auto.components.right.sidebar.SourceControl.24d2598eff',
+                          'Stage all'
+                        )}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void props.handleStageSectionPaths(id, stageAllPaths)
+                        }}
+                        disabled={props.isExecutingBulk}
+                      />
+                    ))}
                   {canUnstageAll && (
                     <ActionButton
                       icon={Minus}

@@ -8,6 +8,10 @@ export function getRepositoryIconSectionId(repoId: string): string {
   return `repo-${repoId}-icon`
 }
 
+export function getRepositoryPromotionSectionId(repoId: string): string {
+  return `repo-${repoId}-gitlab-promotion`
+}
+
 export function getRepositorySourceControlAiSectionId(repoId: string): string {
   return `repo-${repoId}-source-control-ai`
 }

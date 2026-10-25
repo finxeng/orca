@@ -35,6 +35,7 @@ type NewWorkspaceComposerAdvancedSectionProps = Pick<
   | 'name'
   | 'onNameValueChange'
   | 'selectedRepoIsGit'
+  | 'selectedRepo'
   | 'branchesEnabled'
   | 'branchNameOverride'
   | 'onBranchNameOverrideChange'
@@ -80,6 +81,7 @@ export function NewWorkspaceComposerAdvancedSection({
   name,
   onNameValueChange,
   selectedRepoIsGit,
+  selectedRepo,
   branchesEnabled = true,
   branchNameInputId,
   branchNameOverride,
@@ -168,7 +170,7 @@ export function NewWorkspaceComposerAdvancedSection({
           {smartNameSelection ? (
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">
-                {translate('auto.components.NewWorkspaceComposerCard.2688050e4b', 'Name')}
+                {translate('auto.components.NewWorkspaceComposerCard.0ee17638fe', 'Workspace name')}
               </label>
               <input
                 type="text"
@@ -185,7 +187,8 @@ export function NewWorkspaceComposerAdvancedSection({
 
           {selectedRepoIsGit &&
           branchesEnabled &&
-          (!smartNameSelection || smartNameSelection.kind === 'branch') ? (
+          (!smartNameSelection || smartNameSelection.kind === 'branch') &&
+          !selectedRepo?.gitLabPromotion ? (
             <div className="space-y-1">
               <label
                 htmlFor={branchNameInputId}

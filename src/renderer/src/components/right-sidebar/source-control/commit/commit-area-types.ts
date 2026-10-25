@@ -31,6 +31,7 @@ export type CommitAreaProps = {
   isCreatingPr?: boolean
   isCreatePrIntentInFlight?: boolean
   showComposer?: boolean
+  promotionFeature?: boolean
   sourceControlAiActionsVisible: boolean
   aiAgentConfigured: boolean
   isGenerating: boolean
