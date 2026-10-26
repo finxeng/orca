@@ -29,6 +29,7 @@ export type WebGitLabRouteKey =
 
 export type WebGitLabRuntimeMethod =
   | 'gitlab.createPromotionMR'
+  | 'gitlab.createPromotionMRWithDetails'
   | 'gitlab.releaseBranchInfo'
   | 'gitlab.createReleaseBranch'
   | 'gitlab.createReleaseTag'
@@ -56,7 +57,7 @@ export type WebGitLabRuntimeMethod =
   | 'gitlab.workItemByPath'
 
 export const GITLAB_WEB_RPC_METHODS = {
-  createPromotionMR: 'gitlab.createPromotionMR',
+  createPromotionMR: 'gitlab.createPromotionMRWithDetails',
   releaseBranchInfo: 'gitlab.releaseBranchInfo',
   createReleaseBranch: 'gitlab.createReleaseBranch',
   createReleaseTag: 'gitlab.createReleaseTag',

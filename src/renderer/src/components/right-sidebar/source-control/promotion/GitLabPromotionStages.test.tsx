@@ -11,7 +11,8 @@ import type { GitLabWorkItemDetails } from '../../../../../../shared/gitlab-type
 import { GitLabPromotionStages } from './GitLabPromotionStages'
 
 vi.mock('@/i18n/i18n', () => ({
-  translate: (_key: string, fallback: string) => fallback
+  translate: (_key: string, fallback: string, values?: Record<string, string | number>) =>
+    fallback.replace(/{{(\w+)}}/g, (_match, name: string) => String(values?.[name] ?? ''))
 }))
 
 const HEAD_SHA = 'a'.repeat(40)
@@ -50,7 +51,8 @@ afterEach(() => {
 
 function renderStage(
   targetInfo: GitLabReleaseBranchInfo,
-  mrPipelineStatus?: string
+  mrPipelineStatus?: string,
+  mrHeadSha = HEAD_SHA
 ): HTMLButtonElement {
   const container = document.createElement('div')
   document.body.appendChild(container)
@@ -66,7 +68,9 @@ function renderStage(
         }}
         headSha={HEAD_SHA}
         activeReleaseBranch=""
-        details={{ development: { ...detail, pipelineStatus: mrPipelineStatus } }}
+        details={{
+          development: { ...detail, headSha: mrHeadSha, pipelineStatus: mrPipelineStatus }
+        }}
         targetInfos={{ development: targetInfo }}
         busy={false}
         verifier="Alice"
@@ -108,5 +112,23 @@ describe('GitLab promotion target pipeline gate', () => {
       'success'
     )
     expect(button.disabled).toBe(true)
+  })
+
+  it('shows both commits and blocks validation when the GitLab MR head differs from the workspace', () => {
+    const mrHeadSha = 'b'.repeat(40)
+    const button = renderStage(
+      {
+        defaultBranch: 'main',
+        defaultSha: HEAD_SHA,
+        branchSha: HEAD_SHA,
+        pipelineStatus: 'success'
+      },
+      undefined,
+      mrHeadSha
+    )
+    expect(button.disabled).toBe(true)
+    expect(button.closest('div.space-y-2')?.textContent).toContain(
+      'The workspace commit (aaaaaaaa) differs from the GitLab MR source commit (bbbbbbbb)'
+    )
   })
 })

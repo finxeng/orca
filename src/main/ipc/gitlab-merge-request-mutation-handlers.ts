@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import type { GitLabMRInlineCommentInput, GitLabMRUpdate } from '../../shared/gitlab-types'
 import type { TaskSourceContext } from '../../shared/task-source-context'
+import type { GitLabPromotionMrDetails } from '../../shared/gitlab-promotion-workflow'
 import type { Store } from '../persistence'
 import {
   addMRComment,
@@ -32,6 +33,7 @@ export function registerGitLabMergeRequestMutationHandlers(store: Store): void {
         target: string
         expectedSha: string
         issueNumbers?: number[]
+        details?: GitLabPromotionMrDetails
       }
     ) => {
       const repo = assertRegisteredRepo(args, store)
@@ -44,7 +46,8 @@ export function registerGitLabMergeRequestMutationHandlers(store: Store): void {
         args.source,
         args.target,
         args.expectedSha,
-        args.issueNumbers
+        args.issueNumbers,
+        args.details
       )
     }
   )

@@ -202,7 +202,8 @@ export abstract class OrcaRuntimeWithFileCommands extends OrcaRuntimeWithPreserv
         ? {
             linkedIssue: meta.linkedIssue,
             linkedGitLabIssue: meta.linkedGitLabIssue,
-            linkedWorkItem: meta.linkedWorkItem
+            linkedWorkItem: meta.linkedWorkItem,
+            linkedItems: meta.linkedItems
           }
         : null
     },

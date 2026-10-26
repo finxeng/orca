@@ -27,6 +27,7 @@ export function RepositoryGitLabPromotionSection({
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
   const [releaseOpen, setReleaseOpen] = useState(false)
   const valid =
     isValidPromotionRef(developmentBranch) &&
@@ -39,6 +40,7 @@ export function RepositoryGitLabPromotionSection({
     }
     setSaving(true)
     setError('')
+    setSaved(false)
     try {
       const workflow = {
         developmentBranch,
@@ -64,6 +66,8 @@ export function RepositoryGitLabPromotionSection({
               'The server did not save this workflow. Update Orca Server and retry.'
             )
           )
+        } else {
+          setSaved(true)
         }
       }
     } catch (cause) {
@@ -93,7 +97,10 @@ export function RepositoryGitLabPromotionSection({
         <Input
           id={`promotion-development-${repo.id}`}
           value={developmentBranch}
-          onChange={(event) => setDevelopmentBranch(event.target.value)}
+          onChange={(event) => {
+            setDevelopmentBranch(event.target.value)
+            setSaved(false)
+          }}
         />
       </div>
       <div className="space-y-1">
@@ -103,7 +110,10 @@ export function RepositoryGitLabPromotionSection({
         <Input
           id={`promotion-testing-${repo.id}`}
           value={testingBranch}
-          onChange={(event) => setTestingBranch(event.target.value)}
+          onChange={(event) => {
+            setTestingBranch(event.target.value)
+            setSaved(false)
+          }}
         />
       </div>
       {!valid ? (
@@ -114,6 +124,11 @@ export function RepositoryGitLabPromotionSection({
       {error ? (
         <p className="text-xs text-destructive" role="alert">
           {error}
+        </p>
+      ) : null}
+      {saved ? (
+        <p className="text-xs text-muted-foreground" role="status">
+          {translate('gitlabPromotion.saved', 'Workflow saved for this repository.')}
         </p>
       ) : null}
       <div className="flex gap-2">

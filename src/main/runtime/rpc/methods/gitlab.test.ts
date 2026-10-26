@@ -11,6 +11,43 @@ function makeRequest(method: string, params?: unknown): RpcRequest {
 }
 
 describe('gitlab RPC methods', () => {
+  it('requires reviewed MR details on the new promotion creation method', async () => {
+    const createGitLabRepoPromotionMR = vi.fn().mockResolvedValue({ number: 42 })
+    const runtime = { getRuntimeId: () => 'test-runtime', createGitLabRepoPromotionMR }
+    const dispatcher = new RpcDispatcher({
+      // SAFETY: this method dispatches only to createGitLabRepoPromotionMR.
+      runtime: runtime as unknown as OrcaRuntimeService,
+      methods: GITLAB_METHODS
+    })
+    const params = {
+      repo: 'id:repo-1',
+      source: 'feature-1',
+      target: 'develop-1',
+      expectedSha: 'a'.repeat(40),
+      issueNumbers: [11]
+    }
+
+    const missing = await dispatcher.dispatch(
+      makeRequest('gitlab.createPromotionMRWithDetails', params)
+    )
+    expect(missing.ok).toBe(false)
+    expect(createGitLabRepoPromotionMR).not.toHaveBeenCalled()
+
+    const details = { title: 'Test the schedule', description: 'Related to #11', draft: true }
+    const response = await dispatcher.dispatch(
+      makeRequest('gitlab.createPromotionMRWithDetails', { ...params, details })
+    )
+    expect(response.ok).toBe(true)
+    expect(createGitLabRepoPromotionMR).toHaveBeenCalledWith(
+      params.repo,
+      params.source,
+      params.target,
+      params.expectedSha,
+      params.issueNumbers,
+      details
+    )
+  })
+
   it("lists a repo's assignable users on the server that owns the repo", async () => {
     const users = [
       { id: 7, username: 'ana', name: 'Ana', avatarUrl: 'https://gitlab.example.com/ana.png' }

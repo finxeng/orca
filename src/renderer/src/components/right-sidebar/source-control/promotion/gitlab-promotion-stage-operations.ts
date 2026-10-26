@@ -2,6 +2,7 @@ import { translate } from '@/i18n/i18n'
 import type { GitLabWorkItemDetails } from '../../../../../../shared/gitlab-types'
 import type {
   GitLabPromotionFeature,
+  GitLabPromotionMrDetails,
   GitLabPromotionStage,
   GitLabPromotionStep,
   GitLabPromotionWorkflow,
@@ -86,17 +87,27 @@ function saveFeature(
   }
 }
 
-export async function createPromotionStageMR(
-  context: StageContext & {
-    stage: GitLabPromotionStage
-    targetBranch: string
-    issueNumbers: number[]
-  }
-): Promise<{ detail: GitLabWorkItemDetails | null; targetInfo: GitLabReleaseBranchInfo }> {
-  const { workflow, feature, branch, headSha, repoArgs, save, stage, targetBranch } = context
-  if (!headSha || !/^[0-9a-f]{40,64}$/.test(headSha)) {
+function checkStagePrerequisites(
+  workflow: GitLabPromotionWorkflow,
+  feature: GitLabPromotionFeature | undefined,
+  stage: GitLabPromotionStage,
+  targetBranch: string,
+  headSha: string
+): void {
+  const expectedTarget =
+    stage === 'development'
+      ? workflow.developmentBranch
+      : stage === 'testing'
+        ? workflow.testingBranch
+        : workflow.releases.some((release) => release.branch === targetBranch && !release.tag)
+          ? targetBranch
+          : null
+  if (targetBranch !== expectedTarget) {
     throw new Error(
-      translate('gitlabPromotion.refreshGit', 'Refresh the workspace Git status first.')
+      translate(
+        'gitlabPromotion.invalidStageTarget',
+        'The target branch does not match this stage.'
+      )
     )
   }
   const previous =
@@ -105,20 +116,38 @@ export async function createPromotionStageMR(
       : stage === 'pre'
         ? feature?.steps.testing
         : null
-  if (previous && previous.verifiedHeadSha !== headSha) {
+  if (stage !== 'development' && previous?.verifiedHeadSha !== headSha) {
     throw new Error(
       translate(
         'gitlabPromotion.revalidatePrevious',
-        'The feature branch changed after its last validation. Validate the previous environment again.'
+        'The previous environment must be validated for the current feature commit.'
       )
     )
   }
+}
+
+export async function createPromotionStageMR(
+  context: StageContext & {
+    stage: GitLabPromotionStage
+    targetBranch: string
+    issueNumbers: number[]
+    details: GitLabPromotionMrDetails
+  }
+): Promise<{ detail: GitLabWorkItemDetails | null; targetInfo: GitLabReleaseBranchInfo }> {
+  const { workflow, feature, branch, headSha, repoArgs, save, stage, targetBranch } = context
+  if (!headSha || !/^[0-9a-f]{40,64}$/.test(headSha)) {
+    throw new Error(
+      translate('gitlabPromotion.refreshGit', 'Refresh the workspace Git status first.')
+    )
+  }
+  checkStagePrerequisites(workflow, feature, stage, targetBranch, headSha)
   const review = await window.api.gl.createPromotionMR({
     ...repoArgs,
     source: branch,
     target: targetBranch,
     expectedSha: headSha,
-    issueNumbers: context.issueNumbers
+    issueNumbers: context.issueNumbers,
+    details: context.details
   })
   await save(
     saveFeature(workflow, branch, stage, {
@@ -151,6 +180,12 @@ export async function verifyPromotionStage(
   if (!step?.mrIid) {
     throw new Error(translate('gitlabPromotion.createMrFirst', 'Create the MR first.'))
   }
+  if (!headSha) {
+    throw new Error(
+      translate('gitlabPromotion.refreshGit', 'Refresh the workspace Git status first.')
+    )
+  }
+  checkStagePrerequisites(workflow, feature, stage, step.targetBranch, headSha)
   const [detail, targetInfo] = await Promise.all([
     window.api.gl.workItemDetails({
       ...repoArgs,
@@ -188,7 +223,8 @@ export async function verifyPromotionStage(
     throw new Error(
       translate(
         'gitlabPromotion.branchChanged',
-        'The workspace branch changed. Refresh the MR and validate again.'
+        'The workspace commit ({{localSha}}) differs from the GitLab MR source commit ({{mrSha}}). Sync the feature branch and refresh MR status.',
+        { localSha: headSha.slice(0, 8), mrSha: detail.headSha.slice(0, 8) }
       )
     )
   }

@@ -1,4 +1,5 @@
 import { readSourceControlLaunchRecipeAgentId } from '../../../../../../shared/source-control-launch-agent-selection'
+import { sourceControlLinkedIssueNumber } from '../../../../../../shared/source-control-ai-action-variables'
 import { SourceControlDialogLayer } from './dialog-layer'
 import type { SourceControlPanelReadyProps } from './panel-props'
 
@@ -108,7 +109,7 @@ export function SourceControlPanelDialogs({
       settings={settings}
       repo={activeRepo}
       discoveryHostKey={sourceControlAiDiscoveryHostKey}
-      linkedIssue={activeWorktree.linkedIssue ?? null}
+      linkedIssue={sourceControlLinkedIssueNumber(activeWorktree)}
       onGenerateCommitMessage={(params) => {
         void handleGenerate({ sourceControlAiResolvedParams: params })
       }}

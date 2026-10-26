@@ -38,6 +38,12 @@ function renderEntry(hasUncommittedChanges: boolean, currentRepo = repo) {
 }
 
 describe('GitLab promotion source control entry', () => {
+  it('offers setup in Source Control when a feature repo has no saved workflow', () => {
+    const markup = renderEntry(false, { ...repo, gitLabPromotion: undefined })
+    expect(markup).toContain('Configure Dev, Test, and Pre branches')
+    expect(markup).toContain('Configure')
+  })
+
   it('shows the exact development MR target but blocks creation while local changes are pending', () => {
     const markup = renderEntry(true)
     expect(markup).toContain('develop')
@@ -48,7 +54,40 @@ describe('GitLab promotion source control entry', () => {
   it('enables creation after the branch is clean and synced', () => {
     const markup = renderEntry(false)
     expect(markup).toContain('Create Development MR')
+    expect(markup).toContain('Development, testing, Pre, and tag')
+    expect(markup).toContain('Tag')
     expect(markup).not.toMatch(/<button[^>]*disabled=""[^>]*>Create Development MR<\/button>/)
+  })
+
+  it('shows the release tag as the fourth step after Pre validation', () => {
+    const currentRepo: Repo = {
+      ...repo,
+      gitLabPromotion: {
+        ...repo.gitLabPromotion!,
+        releases: [{ branch: 'release-v1.2.3-orderexport', verifiedSha: headSha }],
+        features: [
+          {
+            branch,
+            steps: {
+              development: { targetBranch: 'develop', verifiedHeadSha: headSha },
+              testing: { targetBranch: 'develop-1', verifiedHeadSha: headSha },
+              pre: { targetBranch: 'release-v1.2.3-orderexport', verifiedHeadSha: headSha }
+            }
+          }
+        ]
+      }
+    }
+    expect(renderEntry(false, currentRepo)).toContain('Awaiting release tag')
+    const taggedRepo: Repo = {
+      ...currentRepo,
+      gitLabPromotion: {
+        ...currentRepo.gitLabPromotion!,
+        releases: [
+          { branch: 'release-v1.2.3-orderexport', verifiedSha: headSha, tag: 'repo-tag-v1.2.3' }
+        ]
+      }
+    }
+    expect(renderEntry(false, taggedRepo)).toContain('repo-tag-v1.2.3')
   })
 
   it('links an already recorded MR without offering a duplicate create action', () => {

@@ -15,6 +15,7 @@ function makeStore(
       linkedIssue?: number | null
       linkedGitLabIssue?: number | null
       linkedWorkItem?: { provider: 'gitlab'; type: 'issue'; number: number }
+      linkedItems?: { provider: 'github' | 'gitlab'; type: 'issue'; number: number }[]
     }
   >
 ): Store {
@@ -199,5 +200,24 @@ describe('resolveSourceControlAiLinkedIssue', () => {
         worktreePath: LOCAL_PATH
       })
     ).toBe(789)
+  })
+
+  it('uses a sole GitLab attachment and leaves multiple issue numbers ambiguous', () => {
+    const args = { worktreeId: LOCAL_ID, worktreePath: LOCAL_PATH }
+    const store = makeStore({
+      [LOCAL_ID]: { linkedItems: [{ provider: 'gitlab', type: 'issue', number: 789 }] }
+    })
+    expect(resolveSourceControlAiLinkedIssue(store, args)).toBe(789)
+
+    const ambiguous = makeStore({
+      [LOCAL_ID]: {
+        linkedItems: [
+          { provider: 'gitlab', type: 'issue', number: 789 },
+          { provider: 'gitlab', type: 'issue', number: 790 }
+        ]
+      }
+    })
+    expect(resolveSourceControlAiLinkedIssue(ambiguous, args)).toBeNull()
+    expect(resolveSourceControlAiLinkedIssue(ambiguous, args, undefined, 'gitlab')).toBeNull()
   })
 })

@@ -94,7 +94,9 @@ export function linkedIssueForTarget(
   // Why: `undefined` means the host could not answer, not "unlinked".
   return sourceControlLinkedIssueNumber({
     linkedIssue: live === undefined ? target.worktree.linkedIssue : live,
-    linkedGitLabIssue: target.worktree.linkedGitLabIssue
+    linkedGitLabIssue: target.worktree.linkedGitLabIssue,
+    linkedWorkItem: target.worktree.linkedWorkItem,
+    linkedItems: target.worktree.linkedItems
   })
 }
 
@@ -110,6 +112,7 @@ export function linkedIssueMetaForTarget(
   return {
     linkedIssue: liveGitHubIssue === undefined ? target.worktree.linkedIssue : liveGitHubIssue,
     linkedGitLabIssue: target.worktree.linkedGitLabIssue,
-    linkedWorkItem: target.worktree.linkedWorkItem
+    linkedWorkItem: target.worktree.linkedWorkItem,
+    linkedItems: target.worktree.linkedItems
   }
 }

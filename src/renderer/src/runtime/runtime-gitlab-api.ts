@@ -10,6 +10,7 @@ import {
 } from '@/web/preload-api/web-gitlab-routes'
 import { mapRepoPathArg } from './runtime-repo-selector-params'
 import { hasRuntimeRpcErrorCode } from '../../../shared/runtime-rpc-error-code'
+import { translate } from '@/i18n/i18n'
 
 export type GitLabApi = NonNullable<PreloadApi['gl']>
 
@@ -26,8 +27,24 @@ export function createRuntimeGitLabApi(transport: RuntimeGitLabTransport): GitLa
     transport.call<Result>(method, mapRepoPathArg(args))
 
   return {
-    createPromotionMR: (args) =>
-      route<GitLabApiResult<'createPromotionMR'>>(GITLAB_WEB_RPC_METHODS.createPromotionMR, args),
+    createPromotionMR: async (args) => {
+      try {
+        return await route<GitLabApiResult<'createPromotionMR'>>(
+          GITLAB_WEB_RPC_METHODS.createPromotionMR,
+          args
+        )
+      } catch (error) {
+        if (hasRuntimeRpcErrorCode(error, 'method_not_found')) {
+          throw new Error(
+            translate(
+              'gitlabPromotion.upgradeServerForMr',
+              'Update Orca Server before creating an MR with reviewed details.'
+            )
+          )
+        }
+        throw error
+      }
+    },
     releaseBranchInfo: (args) =>
       route<GitLabApiResult<'releaseBranchInfo'>>(GITLAB_WEB_RPC_METHODS.releaseBranchInfo, args),
     createReleaseBranch: (args) =>

@@ -119,6 +119,7 @@ export const EXECUTION_HOST_METHODS = [
   'gitlab.createReleaseBranch',
   'gitlab.createReleaseTag',
   'gitlab.createPromotionMR',
+  'gitlab.createPromotionMRWithDetails',
   'gitlab.listWorkItems',
   'gitlab.mergeMR',
   'gitlab.resolveMRDiscussion',

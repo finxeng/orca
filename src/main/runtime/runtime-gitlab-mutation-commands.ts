@@ -5,6 +5,7 @@ import type {
   GitLabProjectRef
 } from '../../shared/gitlab-types'
 import type { Repo } from '../../shared/repo-types'
+import type { GitLabPromotionMrDetails } from '../../shared/gitlab-promotion-workflow'
 import {
   addIssueComment,
   addMRComment,
@@ -52,14 +53,16 @@ export class RuntimeGitLabMutationCommands {
     source: string,
     target: string,
     expectedSha: string,
-    issueNumbers?: number[]
+    issueNumbers?: number[],
+    details?: GitLabPromotionMrDetails
   ) {
     return createGitLabPromotionMR(
       await this.releaseContext(repoSelector),
       source,
       target,
       expectedSha,
-      issueNumbers
+      issueNumbers,
+      details
     )
   }
 

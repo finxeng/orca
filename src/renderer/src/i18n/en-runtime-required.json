@@ -3430,13 +3430,18 @@
     }
   },
   "gitlabPromotion": {
+    "allStagesVerified": "All environments verified",
     "commitMessageHint": "Enter a commit message, for example: Run the log schedule every minute",
     "currentFeatureBranch": "Current branch · Feature branch",
+    "invalidVersion": "Enter a version in 0.0.0 format and an English release description.",
+    "localChangesNotInMr": "Local changes are not included in the MR. Commit and push first.",
     "menu": "GitLab release workflow",
     "next": "Next: {{stage}}",
+    "openMrForStatus": "Open the MR or view validation details.",
     "pipelineMissing": "no pipeline found",
     "pipelineSuccess": "passed",
     "releaseShaUnavailable": "Could not read the release branch commit.",
+    "revalidatePrevious": "Validate the previous environment for the current feature commit first.",
     "stagedChanges": "Staged changes",
     "uncommittedChanges": "Uncommitted changes"
   },

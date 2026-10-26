@@ -9,7 +9,10 @@ import { getProjectRef } from './gitlab-project-ref-resolution'
 import { getGitLabRepositoryBranchSha } from './release-operations'
 import type { GitLabReleaseContext } from './release-operations'
 import { isValidPromotionRef } from '../../shared/gitlab-promotion-workflow'
-import type { GitLabPromotionMrResult } from '../../shared/gitlab-promotion-workflow'
+import type {
+  GitLabPromotionMrDetails,
+  GitLabPromotionMrResult
+} from '../../shared/gitlab-promotion-workflow'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -41,7 +44,8 @@ export async function createGitLabPromotionMR(
   source: string,
   target: string,
   expectedSha: string,
-  issueNumbers: number[] = []
+  issueNumbers: number[] = [],
+  details?: GitLabPromotionMrDetails
 ): Promise<GitLabPromotionMrResult> {
   if (
     !isValidPromotionRef(source) ||
@@ -49,7 +53,9 @@ export async function createGitLabPromotionMR(
     source === target ||
     !/^[0-9a-f]{40,64}$/.test(expectedSha) ||
     issueNumbers.length > 20 ||
-    issueNumbers.some((number) => !Number.isSafeInteger(number) || number <= 0)
+    issueNumbers.some((number) => !Number.isSafeInteger(number) || number <= 0) ||
+    (details !== undefined &&
+      (!details.title.trim() || details.title.length > 255 || details.description.length > 20_000))
   ) {
     throw new Error('Invalid promotion merge request.')
   }
@@ -108,6 +114,10 @@ export async function createGitLabPromotionMR(
     if (existing) {
       return existing
     }
+    const title = details?.title.trim() ?? `${source} → ${target}`
+    const description =
+      details?.description ??
+      [...new Set(issueNumbers)].map((number) => `Related to #${number}`).join('\n')
     try {
       await glabExecFileAsync(
         [
@@ -120,9 +130,10 @@ export async function createGitLabPromotionMR(
           '--target-branch',
           target,
           '--title',
-          `${source} → ${target}`,
+          title,
           '--description',
-          [...new Set(issueNumbers)].map((number) => `Related to #${number}`).join('\n'),
+          description,
+          ...(details?.draft ? ['--draft'] : []),
           '--remove-source-branch=false',
           '--push=false',
           '--yes'

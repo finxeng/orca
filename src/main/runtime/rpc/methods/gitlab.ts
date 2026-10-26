@@ -8,6 +8,7 @@ import {
   CreateIssue,
   CreateReleaseBranch,
   CreatePromotionMR,
+  CreatePromotionMRWithDetails,
   CreateReleaseTag,
   EmptyParams,
   GitLabRateLimit,
@@ -39,6 +40,20 @@ export const GITLAB_METHODS = [
         params.target,
         params.expectedSha,
         params.issueNumbers
+      )
+  }),
+  defineMethod({
+    name: 'gitlab.createPromotionMRWithDetails',
+    permission: 'workspace',
+    params: CreatePromotionMRWithDetails,
+    handler: async (params, { runtime }) =>
+      runtime.createGitLabRepoPromotionMR(
+        params.repo,
+        params.source,
+        params.target,
+        params.expectedSha,
+        params.issueNumbers,
+        params.details
       )
   }),
   defineMethod({

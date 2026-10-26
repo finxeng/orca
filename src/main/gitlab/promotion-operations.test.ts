@@ -77,14 +77,14 @@ describe('GitLab promotion mutations', () => {
           if (branch && sha) {
             releaseHeads.set(branch, sha)
           }
-          return { stdout: JSON.stringify({ name: 'release-v1.2.3-20261025' }) }
+          return { stdout: JSON.stringify({ name: 'release-v1.2.3-orderexport' }) }
         }
         if (path.endsWith('/repository/tags')) {
-          return { stdout: JSON.stringify({ name: 'v1.2.3' }) }
+          return { stdout: JSON.stringify({ name: 'repo-tag-v1.2.3' }) }
         }
       }
       if (path === 'projects/team%2Frepo') {
-        return { stdout: JSON.stringify({ default_branch: 'main' }) }
+        return { stdout: JSON.stringify({ default_branch: 'main', path: 'repo' }) }
       }
       if (path.includes('/repository/branches/main')) {
         return { stdout: JSON.stringify({ commit: { id: defaultSha } }) }
@@ -122,16 +122,23 @@ describe('GitLab promotion mutations', () => {
 
   it('creates the release only at the default branch SHA the user saw', async () => {
     await expect(
-      createGitLabReleaseBranch(CONTEXT, 'release-v1.2.3-20261025', DEFAULT_SHA)
+      createGitLabReleaseBranch(CONTEXT, 'release-v1.2.3-orderexport', DEFAULT_SHA)
     ).resolves.toMatchObject({ branchSha: DEFAULT_SHA })
     expect(posted[0]).toMatchObject({
-      fields: ['branch=release-v1.2.3-20261025', `ref=${DEFAULT_SHA}`]
+      fields: ['branch=release-v1.2.3-orderexport', `ref=${DEFAULT_SHA}`]
     })
     defaultSha = FEATURE_SHA
     await expect(
-      createGitLabReleaseBranch(CONTEXT, 'release-v1.2.4-20261025', DEFAULT_SHA)
+      createGitLabReleaseBranch(CONTEXT, 'release-v1.2.4-orderexport', DEFAULT_SHA)
     ).rejects.toThrow()
     expect(posted).toHaveLength(1)
+  })
+
+  it('rejects release names without a valid English description', async () => {
+    await expect(
+      createGitLabReleaseBranch(CONTEXT, 'release-v1.2.3-中文', DEFAULT_SHA)
+    ).rejects.toThrow('Invalid release branch')
+    expect(posted).toHaveLength(0)
   })
 
   it('reads the target branch pipeline for its current commit', async () => {
@@ -151,21 +158,21 @@ describe('GitLab promotion mutations', () => {
   })
 
   it('refuses to tag when release HEAD changed after verification', async () => {
-    releaseHeads.set('release-v1.2.3-20261025', RELEASE_SHA)
+    releaseHeads.set('release-v1.2.3-orderexport', RELEASE_SHA)
     await expect(
-      createGitLabReleaseTag(CONTEXT, 'release-v1.2.3-20261025', 'v1.2.3', DEFAULT_SHA)
+      createGitLabReleaseTag(CONTEXT, 'release-v1.2.3-orderexport', 'repo-tag-v1.2.3', DEFAULT_SHA)
     ).rejects.toThrow('changed')
     expect(posted).toHaveLength(0)
     await expect(
-      createGitLabReleaseTag(CONTEXT, 'release-v1.2.3-20261025', 'v1.2.3', RELEASE_SHA)
-    ).resolves.toEqual({ tag: 'v1.2.3', sha: RELEASE_SHA })
+      createGitLabReleaseTag(CONTEXT, 'release-v1.2.3-orderexport', 'repo-tag-v1.2.3', RELEASE_SHA)
+    ).resolves.toEqual({ tag: 'repo-tag-v1.2.3', sha: RELEASE_SHA })
     expect(posted[0]?.fields).toContain(`ref=${RELEASE_SHA}`)
   })
 
   it('rejects a tag whose version differs from the release branch', async () => {
-    releaseHeads.set('release-v1.2.3-20261025', RELEASE_SHA)
+    releaseHeads.set('release-v1.2.3-orderexport', RELEASE_SHA)
     await expect(
-      createGitLabReleaseTag(CONTEXT, 'release-v1.2.3-20261025', 'v1.2.4', RELEASE_SHA)
+      createGitLabReleaseTag(CONTEXT, 'release-v1.2.3-orderexport', 'repo-tag-v1.2.4', RELEASE_SHA)
     ).rejects.toThrow('Invalid release tag')
     expect(posted).toHaveLength(0)
   })
@@ -202,5 +209,38 @@ describe('GitLab promotion mutations', () => {
     )
     const args = mrCreates[0]
     expect(args[args.indexOf('--description') + 1]).toBe('Related to #123\nRelated to #456')
+  })
+
+  it('uses the reviewed MR title, description, and draft choice', async () => {
+    await createGitLabPromotionMR(
+      CONTEXT,
+      'feature-20261025-search-alice',
+      'develop-1',
+      FEATURE_SHA,
+      [123],
+      {
+        title: 'Validate search in test',
+        description: 'Related to #123\nTest plan: search',
+        draft: true
+      }
+    )
+    const args = mrCreates[0]
+    expect(args[args.indexOf('--title') + 1]).toBe('Validate search in test')
+    expect(args[args.indexOf('--description') + 1]).toBe('Related to #123\nTest plan: search')
+    expect(args).toContain('--draft')
+  })
+
+  it('rejects an empty reviewed title before reaching GitLab', async () => {
+    await expect(
+      createGitLabPromotionMR(
+        CONTEXT,
+        'feature-20261025-search-alice',
+        'develop-1',
+        FEATURE_SHA,
+        [],
+        { title: '  ', description: 'Test plan', draft: false }
+      )
+    ).rejects.toThrow('Invalid promotion merge request')
+    expect(mrCreates).toHaveLength(0)
   })
 })

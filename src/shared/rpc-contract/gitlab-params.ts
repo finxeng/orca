@@ -12,6 +12,13 @@ export const CreatePromotionMR = RepoSelector.extend({
   expectedSha: requiredString('Missing feature commit'),
   issueNumbers: z.array(z.number().int().positive()).max(20).optional()
 })
+export const CreatePromotionMRWithDetails = CreatePromotionMR.extend({
+  details: z.object({
+    title: z.string().trim().min(1, 'Missing MR title').max(255),
+    description: z.string().max(20_000),
+    draft: z.boolean()
+  })
+})
 export const CreateReleaseBranch = RepoSelector.extend({
   branch: requiredString('Missing release branch'),
   expectedDefaultSha: requiredString('Missing base commit')

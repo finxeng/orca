@@ -6,6 +6,11 @@ import type {
   GitLabPromotionWorkflow,
   GitLabReleaseBranchInfo
 } from '../../../../../../shared/gitlab-promotion-workflow'
+import {
+  promotionReleaseBranch,
+  promotionReleaseVersion,
+  promotionTagName
+} from '../../../../../../shared/gitlab-promotion-workflow'
 
 export function GitLabPromotionReleaseSection({
   workflow,
@@ -13,12 +18,15 @@ export function GitLabPromotionReleaseSection({
   release,
   activeReleaseBranch,
   releaseVersion,
+  releaseDescription,
+  projectName,
   pendingRelease,
   existingReleaseName,
   tagName,
   pendingTag,
   busy,
   onReleaseVersionChange,
+  onReleaseDescriptionChange,
   onExistingReleaseNameChange,
   onTagNameChange,
   onSelectedReleaseChange,
@@ -33,12 +41,15 @@ export function GitLabPromotionReleaseSection({
   release: GitLabPromotionRelease | undefined
   activeReleaseBranch: string
   releaseVersion: string
+  releaseDescription: string
+  projectName: string
   pendingRelease: { branch: string; info: GitLabReleaseBranchInfo } | null
   existingReleaseName: string
   tagName: string
   pendingTag: { branch: string; tag: string; sha: string } | null
   busy: boolean
   onReleaseVersionChange: (value: string) => void
+  onReleaseDescriptionChange: (value: string) => void
   onExistingReleaseNameChange: (value: string) => void
   onTagNameChange: (value: string) => void
   onSelectedReleaseChange: (value: string) => void
@@ -51,13 +62,13 @@ export function GitLabPromotionReleaseSection({
   const included = release
     ? workflow.features.filter((item) => item.steps.pre?.targetBranch === release.branch)
     : []
-  const suggestedTag = release?.branch.match(/^release-(v\d+\.\d+\.\d+)-\d{8}$/)?.[1] ?? ''
+  const suggestedTag = release ? (promotionTagName(projectName, release.branch) ?? '') : ''
   const selectedTag = tagName || suggestedTag
   const allIncludedVerified =
     included.length > 0 && included.every((item) => item.steps.pre?.verifiedHeadSha)
   return (
     <div className="space-y-3 border-t border-border pt-4">
-      <h3 className="text-sm font-semibold">Release</h3>
+      <h3 className="text-sm font-semibold">{translate('gitlabPromotion.release', 'Release')}</h3>
       <div className="flex gap-2">
         <Input
           aria-label={translate('gitlabPromotion.version', 'Version')}
@@ -67,12 +78,21 @@ export function GitLabPromotionReleaseSection({
         />
         <Button
           size="sm"
-          disabled={busy || !/^\d+\.\d+\.\d+$/.test(releaseVersion)}
+          disabled={busy || !promotionReleaseBranch(releaseVersion, releaseDescription)}
           onClick={onPrepareRelease}
         >
           {translate('gitlabPromotion.checkRelease', 'Check release')}
         </Button>
       </div>
+      <Input
+        aria-label={translate('gitlabPromotion.releaseDescription', 'Release description')}
+        value={releaseDescription}
+        onChange={(event) => onReleaseDescriptionChange(event.target.value)}
+        placeholder={translate(
+          'gitlabPromotion.releaseDescriptionHint',
+          'English letters, numbers, dots, and hyphens'
+        )}
+      />
       {pendingRelease ? (
         <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3 text-xs">
           <div>
@@ -92,12 +112,15 @@ export function GitLabPromotionReleaseSection({
           aria-label={translate('gitlabPromotion.existingRelease', 'Existing release branch')}
           value={existingReleaseName}
           onChange={(event) => onExistingReleaseNameChange(event.target.value)}
-          placeholder="release-v0.0.0-20261025"
+          placeholder={translate(
+            'gitlabPromotion.existingReleaseExample',
+            'release-v0.0.0-orderexport'
+          )}
         />
         <Button
           size="sm"
           variant="outline"
-          disabled={busy || !/^release-v\d+\.\d+\.\d+-\d{8}$/.test(existingReleaseName)}
+          disabled={busy || !promotionReleaseVersion(existingReleaseName)}
           onClick={onImportRelease}
         >
           {translate('gitlabPromotion.addExisting', 'Add existing branch')}
@@ -131,7 +154,10 @@ export function GitLabPromotionReleaseSection({
               : translate('gitlabPromotion.pending', 'Pending')}
             {release.verifiedBy ? ` · ${release.verifiedBy}` : ''}
           </div>
-          <div>Tag: {release.tag ?? translate('gitlabPromotion.notCreated', 'Not created')}</div>
+          <div>
+            {translate('gitlabPromotion.tagStage', 'Tag')}:{' '}
+            {release.tag ?? translate('gitlabPromotion.notCreated', 'Not created')}
+          </div>
           <div className="space-y-1">
             <div>{translate('gitlabPromotion.includedFeatures', 'Included features')}:</div>
             {included.length === 0 ? (
@@ -144,7 +170,9 @@ export function GitLabPromotionReleaseSection({
                     {item.steps.pre?.verifiedHeadSha
                       ? translate('gitlabPromotion.validated', 'Validated')
                       : item.steps.pre?.mrIid
-                        ? `MR !${item.steps.pre.mrIid}`
+                        ? translate('gitlabPromotion.mrNumber', 'MR !{{number}}', {
+                            number: item.steps.pre.mrIid
+                          })
                         : translate('gitlabPromotion.awaitingMr', 'Awaiting MR')}
                   </span>
                 </div>
@@ -157,11 +185,13 @@ export function GitLabPromotionReleaseSection({
                 aria-label={translate('gitlabPromotion.tagName', 'Tag name')}
                 value={selectedTag}
                 onChange={(event) => onTagNameChange(event.target.value)}
-                placeholder="v0.0.0"
+                placeholder={translate('gitlabPromotion.tagNameExample', 'project-tag-v0.0.0')}
               />
               <Button
                 size="sm"
-                disabled={busy || !allIncludedVerified || selectedTag !== suggestedTag}
+                disabled={
+                  busy || !allIncludedVerified || !suggestedTag || selectedTag !== suggestedTag
+                }
                 onClick={() => onPrepareTag(selectedTag)}
               >
                 {translate('gitlabPromotion.checkTag', 'Check tag')}
@@ -179,7 +209,8 @@ export function GitLabPromotionReleaseSection({
           {pendingTag?.branch === release.branch ? (
             <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
               <div>
-                Tag {pendingTag.tag} → {pendingTag.sha.slice(0, 12)}
+                {translate('gitlabPromotion.tagStage', 'Tag')} {pendingTag.tag} →{' '}
+                {pendingTag.sha.slice(0, 12)}
               </div>
               <Button size="sm" disabled={busy} onClick={onCreateTag}>
                 {translate('gitlabPromotion.confirmTag', 'Create tag')}

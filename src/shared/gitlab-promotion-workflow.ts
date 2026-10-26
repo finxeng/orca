@@ -3,10 +3,12 @@ export type GitLabReleaseBranchInfo = {
   defaultBranch: string
   defaultSha: string
   branchSha: string | null
+  projectName?: string
   pipelineStatus?: string
   pipelineUrl?: string
 }
 export type GitLabPromotionMrResult = { number: number; url: string; headSha: string }
+export type GitLabPromotionMrDetails = { title: string; description: string; draft: boolean }
 
 export type GitLabPromotionStep = {
   targetBranch: string
@@ -174,10 +176,28 @@ export function normalizeGitLabPromotionWorkflow(
   }
 }
 
-export function promotionReleaseBranch(version: string, date: Date): string | null {
-  if (!/^\d+\.\d+\.\d+$/.test(version)) {
+const RELEASE_DESCRIPTION = /^[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*$/
+
+export function promotionReleaseBranch(version: string, description: string): string | null {
+  if (
+    !/^\d+\.\d+\.\d+$/.test(version) ||
+    description.length > 48 ||
+    !RELEASE_DESCRIPTION.test(description)
+  ) {
     return null
   }
-  const stamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
-  return `release-v${version}-${stamp}`
+  return `release-v${version}-${description}`
+}
+
+export function promotionReleaseVersion(branch: string): string | null {
+  const match = /^release-(v\d+\.\d+\.\d+)-(.+)$/.exec(branch)
+  return match && match[2].length <= 48 && RELEASE_DESCRIPTION.test(match[2]) ? match[1] : null
+}
+
+export function promotionTagName(projectName: string, releaseBranch: string): string | null {
+  const version = promotionReleaseVersion(releaseBranch)
+  if (!version || !RELEASE_DESCRIPTION.test(projectName)) {
+    return null
+  }
+  return `${projectName.toLowerCase()}-tag-${version}`
 }

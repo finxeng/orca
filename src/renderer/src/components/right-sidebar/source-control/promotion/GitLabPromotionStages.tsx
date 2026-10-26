@@ -77,9 +77,14 @@ export function GitLabPromotionStages({
               translate('gitlabPromotion.pipelineMissing', 'No pipeline found'))
         const prior = index === 0 ? null : feature?.steps[STAGES[index - 1]]
         const canStart =
-          index === 0 || Boolean(prior?.verifiedHeadSha && prior.verifiedHeadSha === headSha)
+          (index === 0 || Boolean(prior?.verifiedHeadSha && prior.verifiedHeadSha === headSha)) &&
+          (stage !== 'pre' ||
+            workflow.releases.some((item) => item.branch === targetBranch && !item.tag))
         const verified = Boolean(step?.verifiedHeadSha && step.verifiedHeadSha === headSha)
         const stale = Boolean(step?.verifiedHeadSha && step.verifiedHeadSha !== headSha)
+        const headMismatch = Boolean(
+          step?.mrIid && detail?.headSha && headSha && detail.headSha !== headSha
+        )
         return (
           <div key={stage} className="space-y-2 border-b border-border pb-4 last:border-0">
             <div className="min-w-0">
@@ -92,18 +97,27 @@ export function GitLabPromotionStages({
               <p className="text-xs text-muted-foreground">
                 {stale
                   ? translate('gitlabPromotion.staleVerification', 'Verification is out of date')
-                  : verified
-                    ? translate('gitlabPromotion.verified', 'Verified {{sha}} · {{user}}', {
-                        sha: step?.verifiedHeadSha?.slice(0, 8) ?? '',
-                        user:
-                          step?.verifiedBy ??
-                          translate('gitlabPromotion.unknownVerifier', 'Unknown verifier')
-                      })
-                    : detail?.item.state === 'merged'
-                      ? `${translate('gitlabPromotion.awaitingVerification', 'Merged, awaiting environment validation')} · ${targetBranch} ${translate('gitlabPromotion.pipeline', 'pipeline')}: ${targetPipelineStatus}${targetInfo?.branchSha ? ` (${targetInfo.branchSha.slice(0, 8)})` : ''}`
-                      : step?.mrIid
-                        ? `MR !${step.mrIid} · ${detail?.pipelineStatus ?? translate('gitlabPromotion.loading', 'Loading')}`
-                        : translate('gitlabPromotion.awaitingMr', 'Awaiting MR')}
+                  : headMismatch
+                    ? translate(
+                        'gitlabPromotion.branchChanged',
+                        'The workspace commit ({{localSha}}) differs from the GitLab MR source commit ({{mrSha}}). Sync the feature branch and refresh MR status.',
+                        {
+                          localSha: headSha?.slice(0, 8) ?? '',
+                          mrSha: detail?.headSha?.slice(0, 8) ?? ''
+                        }
+                      )
+                    : verified
+                      ? translate('gitlabPromotion.verified', 'Verified {{sha}} · {{user}}', {
+                          sha: step?.verifiedHeadSha?.slice(0, 8) ?? '',
+                          user:
+                            step?.verifiedBy ??
+                            translate('gitlabPromotion.unknownVerifier', 'Unknown verifier')
+                        })
+                      : detail?.item.state === 'merged'
+                        ? `${translate('gitlabPromotion.awaitingVerification', 'Merged, awaiting environment validation')} · ${targetBranch} ${translate('gitlabPromotion.pipeline', 'pipeline')}: ${targetPipelineStatus}${targetInfo?.branchSha ? ` (${targetInfo.branchSha.slice(0, 8)})` : ''}`
+                        : step?.mrIid
+                          ? `${translate('gitlabPromotion.mrNumber', 'MR !{{number}}', { number: step.mrIid })} · ${detail?.pipelineStatus ?? translate('gitlabPromotion.loading', 'Loading')}`
+                          : translate('gitlabPromotion.awaitingMr', 'Awaiting MR')}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -131,6 +145,7 @@ export function GitLabPromotionStages({
                     detail?.item.branchName !== feature?.branch ||
                     detail?.item.baseRefName !== targetBranch ||
                     detail?.item.state !== 'merged' ||
+                    headMismatch ||
                     targetInfo?.pipelineStatus !== 'success' ||
                     !targetInfo?.branchSha ||
                     !verifier.trim()

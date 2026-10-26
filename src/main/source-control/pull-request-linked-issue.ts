@@ -1,16 +1,13 @@
 import type { HostedReviewProvider } from '../../shared/hosted-review'
 import type { PullRequestLinkedIssue } from '../../shared/pull-request-generation'
-import { isLinkedIssueNumber } from '../../shared/source-control-ai-action-variables'
-import type { WorkspaceLinkedItem } from '../../shared/worktree/types'
+import { sourceControlLinkedIssueNumber } from '../../shared/source-control-ai-action-variables'
+import { getWorkspaceAttachments } from '../../shared/workspace-attachments'
+import type { WorkspaceAttachmentMetadata } from '../../shared/workspace-attachment-legacy'
 import type { GitRuntimeOptions } from '../git/git-runtime-options'
 import { getIssue as getGitHubIssue } from '../github/issues'
 import { getIssue as getGitLabIssue } from '../gitlab/issues'
 
-export type PullRequestLinkedIssueMeta = {
-  linkedIssue?: number | null
-  linkedGitLabIssue?: number | null
-  linkedWorkItem?: WorkspaceLinkedItem | null
-}
+export type PullRequestLinkedIssueMeta = WorkspaceAttachmentMetadata
 
 type LocalGitOptions = Pick<GitRuntimeOptions, 'wslDistro' | 'admissionTier'>
 
@@ -24,13 +21,8 @@ function inferIssueProvider(
   if (provider) {
     return null
   }
-  if (meta.linkedWorkItem?.type === 'issue') {
-    if (meta.linkedWorkItem.provider === 'github' || meta.linkedWorkItem.provider === 'gitlab') {
-      return meta.linkedWorkItem.provider
-    }
-  }
-  const hasGitHub = isLinkedIssueNumber(meta.linkedIssue)
-  const hasGitLab = isLinkedIssueNumber(meta.linkedGitLabIssue)
+  const hasGitHub = sourceControlLinkedIssueNumber(meta, 'github') !== null
+  const hasGitLab = sourceControlLinkedIssueNumber(meta, 'gitlab') !== null
   return hasGitHub === hasGitLab ? null : hasGitHub ? 'github' : 'gitlab'
 }
 
@@ -40,9 +32,17 @@ function fallbackTitle(
   number: number
 ): string {
   const item = meta.linkedWorkItem
-  return item?.provider === provider && item.type === 'issue' && item.number === number
-    ? item.title
-    : '(title unavailable)'
+  if (item?.provider === provider && item.type === 'issue' && item.number === number) {
+    return item.title
+  }
+  return (
+    getWorkspaceAttachments(meta).find(
+      (attachment) =>
+        attachment.provider === provider &&
+        attachment.type === 'issue' &&
+        attachment.number === number
+    )?.title ?? '(title unavailable)'
+  )
 }
 
 export async function loadPullRequestLinkedIssue(args: {
@@ -56,13 +56,8 @@ export async function loadPullRequestLinkedIssue(args: {
     return null
   }
   const provider = inferIssueProvider(args.meta, args.provider)
-  const number =
-    provider === 'github'
-      ? args.meta.linkedIssue
-      : provider === 'gitlab'
-        ? args.meta.linkedGitLabIssue
-        : null
-  if (!provider || !isLinkedIssueNumber(number)) {
+  const number = sourceControlLinkedIssueNumber(args.meta, provider)
+  if (!provider || number === null) {
     return null
   }
 

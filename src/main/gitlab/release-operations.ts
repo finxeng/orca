@@ -7,7 +7,11 @@ import {
 } from './gl-utils'
 import { getProjectRef } from './gitlab-project-ref-resolution'
 import type { LocalGitExecOptions } from './gitlab-project-ref-resolution'
-import { isValidPromotionRef } from '../../shared/gitlab-promotion-workflow'
+import {
+  isValidPromotionRef,
+  promotionReleaseVersion,
+  promotionTagName
+} from '../../shared/gitlab-promotion-workflow'
 import type { GitLabReleaseBranchInfo } from '../../shared/gitlab-promotion-workflow'
 
 export type GitLabReleaseContext = {
@@ -118,6 +122,7 @@ export async function getGitLabReleaseBranchInfo(
     throw new Error('GitLab did not report a valid default branch.')
   }
   const defaultBranch = project.default_branch
+  const projectName = typeof project.path === 'string' ? project.path : undefined
   const defaultSha = readSha(await branchInfo(context, defaultBranch))
   if (!defaultSha) {
     throw new Error('Could not read the default branch commit.')
@@ -128,6 +133,7 @@ export async function getGitLabReleaseBranchInfo(
     defaultBranch,
     defaultSha,
     branchSha,
+    ...(projectName ? { projectName } : {}),
     ...(pipeline ? { pipelineStatus: pipeline.status, pipelineUrl: pipeline.url } : {})
   }
 }
@@ -137,7 +143,7 @@ export async function createGitLabReleaseBranch(
   branch: string,
   expectedDefaultSha: string
 ): Promise<GitLabReleaseBranchInfo> {
-  if (!isValidPromotionRef(branch) || !/^release-v\d+\.\d+\.\d+-\d{8}$/.test(branch)) {
+  if (!isValidPromotionRef(branch) || !promotionReleaseVersion(branch)) {
     throw new Error('Invalid release branch name.')
   }
   if (!/^[0-9a-f]{40,64}$/.test(expectedDefaultSha)) {
@@ -172,13 +178,24 @@ export async function createGitLabReleaseTag(
   if (
     !isValidPromotionRef(branch) ||
     !isValidPromotionRef(tag) ||
-    branch.match(/^release-(v\d+\.\d+\.\d+)-\d{8}$/)?.[1] !== tag ||
     !/^[0-9a-f]{40,64}$/.test(expectedSha)
   ) {
     throw new Error('Invalid release tag request.')
   }
   await acquire()
   try {
+    const project = await getProjectRef(
+      context.repoPath,
+      undefined,
+      context.connectionId,
+      context.gitOptions
+    )
+    const expectedTag = project
+      ? promotionTagName(project.path.split('/').at(-1) ?? '', branch)
+      : null
+    if (!expectedTag || tag !== expectedTag) {
+      throw new Error('Invalid release tag request.')
+    }
     const current = await branchInfo(context, branch)
     if (readSha(current) !== expectedSha) {
       throw new Error('Release branch changed after Pre verification.')

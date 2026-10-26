@@ -70,6 +70,9 @@ function makeStore(worktreePath: string) {
       // invalidating the runtime's resolved-worktree cache.
       worktreeMeta[worktreeId] = { ...worktreeMeta[worktreeId], linkedIssue }
     },
+    updateLinkedItems: (linkedItems: WorktreeMeta['linkedItems']): void => {
+      worktreeMeta[worktreeId] = { ...worktreeMeta[worktreeId], linkedItems }
+    },
     store: {
       getRepos: () => [
         { id: REPO_ID, path: worktreePath, displayName: 'repo', badgeColor: 'blue', addedAt: 1 }
@@ -138,6 +141,30 @@ describe('runtime commit-message generation linked-issue freshness', () => {
     expect(await generatedCommitContext(runtime, worktreeId)).toMatchObject({ linkedIssue: 321 })
 
     updateLinkedIssue(null)
+    expect(await generatedCommitContext(runtime, worktreeId)).not.toHaveProperty('linkedIssue')
+  })
+
+  it('uses a GitLab issue from live workspace attachments and clears it after unlink', async () => {
+    const worktreePath = mkdtempSync(join(tmpdir(), 'orca-linked-gitlab-issue-'))
+    tempDirs.push(worktreePath)
+    const { store, worktreeId, updateLinkedItems } = makeStore(worktreePath)
+    mocks.listWorktrees.mockResolvedValue([
+      {
+        path: worktreePath,
+        head: 'a'.repeat(40),
+        branch: 'main',
+        isBare: false,
+        isMainWorktree: true
+      }
+    ])
+    const runtime = new OrcaRuntimeService(store as never)
+
+    expect(await generatedCommitContext(runtime, worktreeId)).not.toHaveProperty('linkedIssue')
+
+    updateLinkedItems([{ provider: 'gitlab', type: 'issue', number: 456 }])
+    expect(await generatedCommitContext(runtime, worktreeId)).toMatchObject({ linkedIssue: 456 })
+
+    updateLinkedItems([])
     expect(await generatedCommitContext(runtime, worktreeId)).not.toHaveProperty('linkedIssue')
   })
 })

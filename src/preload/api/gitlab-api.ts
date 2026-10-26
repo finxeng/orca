@@ -1,6 +1,7 @@
 import type { TaskSourceContext } from '../../shared/task-source-context'
 import type {
   GitLabReleaseBranchInfo,
+  GitLabPromotionMrDetails,
   GitLabPromotionMrResult
 } from '../../shared/gitlab-promotion-workflow'
 import type { ClassifiedError } from '../../shared/classified-error'
@@ -42,6 +43,7 @@ export type GitLabApi = {
       target: string
       expectedSha: string
       issueNumbers?: number[]
+      details?: GitLabPromotionMrDetails
     }
   ) => Promise<GitLabPromotionMrResult>
   releaseBranchInfo: (

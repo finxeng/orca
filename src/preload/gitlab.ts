@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron'
 import type { TaskSourceContext } from '../shared/task-source-context'
+import type { GitLabPromotionMrDetails } from '../shared/gitlab-promotion-workflow'
 
 type GitLabRepoSelectorArgs = {
   repoPath: string
@@ -9,7 +10,13 @@ type GitLabRepoSelectorArgs = {
 
 export const glApi = {
   createPromotionMR: (
-    args: GitLabRepoSelectorArgs & { source: string; target: string; expectedSha: string }
+    args: GitLabRepoSelectorArgs & {
+      source: string
+      target: string
+      expectedSha: string
+      issueNumbers?: number[]
+      details?: GitLabPromotionMrDetails
+    }
   ) => ipcRenderer.invoke('gitlab:createPromotionMR', args),
   releaseBranchInfo: (args: GitLabRepoSelectorArgs & { branch?: string }) =>
     ipcRenderer.invoke('gitlab:releaseBranchInfo', args),

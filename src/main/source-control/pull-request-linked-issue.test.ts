@@ -54,6 +54,21 @@ describe('loadPullRequestLinkedIssue', () => {
     expect(mocks.getGitHubIssue).not.toHaveBeenCalled()
   })
 
+  it('loads a GitLab issue found only in workspace attachments', async () => {
+    mocks.getGitLabIssue.mockResolvedValue(null)
+
+    await expect(
+      loadPullRequestLinkedIssue({
+        meta: {
+          linkedItems: [{ provider: 'gitlab', type: 'issue', number: 58, title: 'Cached issue' }]
+        },
+        provider: 'gitlab',
+        repoPath: '/repo'
+      })
+    ).resolves.toMatchObject({ provider: 'gitlab', number: 58, title: 'Cached issue' })
+    expect(mocks.getGitLabIssue).toHaveBeenCalledWith('/repo', 58, undefined, undefined)
+  })
+
   it('uses persisted work-item title when the provider lookup fails', async () => {
     mocks.getGitHubIssue.mockResolvedValue(null)
 

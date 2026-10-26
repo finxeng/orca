@@ -1,5 +1,7 @@
 import type { AiActionId } from './source-control-ai-actions'
 import type { HostedReviewProvider } from './hosted-review'
+import { getWorkspaceAttachments } from './workspace-attachments'
+import type { WorkspaceAttachmentMetadata } from './workspace-attachment-legacy'
 
 /**
  * Registering a variable a hover card cannot describe is a compile error: the
@@ -87,7 +89,7 @@ export const SOURCE_CONTROL_ACTION_VARIABLE_INFO = {
   },
   linkedIssue: {
     description:
-      'The issue number linked to this workspace for the active GitHub or GitLab review. Empty when no matching issue is linked or the provider is ambiguous. Include a closing keyword only when the issue should be closed.',
+      'The GitHub or GitLab issue number linked to this workspace. Empty when no issue is linked or multiple issues make the choice ambiguous. Include a closing keyword only when the issue should be closed.',
     example: '123'
   }
 } satisfies Record<string, SourceControlActionVariableInfo>
@@ -106,31 +108,28 @@ export function isLinkedIssueNumber(linkedIssue: unknown): linkedIssue is number
 }
 
 export function sourceControlLinkedIssueNumber(
-  meta:
-    | {
-        linkedIssue?: number | null
-        linkedGitLabIssue?: number | null
-        linkedWorkItem?: {
-          provider: string
-          type: string
-          number: number
-        } | null
-      }
-    | null
-    | undefined,
+  meta: WorkspaceAttachmentMetadata | null | undefined,
   provider?: HostedReviewProvider | null
 ): number | null {
   const linkedItem = meta?.linkedWorkItem?.type === 'issue' ? meta.linkedWorkItem : null
-  const github = isLinkedIssueNumber(meta?.linkedIssue)
-    ? meta.linkedIssue
-    : linkedItem?.provider === 'github' && isLinkedIssueNumber(linkedItem.number)
-      ? linkedItem.number
-      : null
-  const gitlab = isLinkedIssueNumber(meta?.linkedGitLabIssue)
-    ? meta.linkedGitLabIssue
-    : linkedItem?.provider === 'gitlab' && isLinkedIssueNumber(linkedItem.number)
-      ? linkedItem.number
-      : null
+  const attachments = getWorkspaceAttachments(meta)
+  const forProvider = (issueProvider: 'github' | 'gitlab'): number | null => {
+    const selected = issueProvider === 'github' ? meta?.linkedIssue : meta?.linkedGitLabIssue
+    if (isLinkedIssueNumber(selected)) {
+      return selected
+    }
+    if (linkedItem?.provider === issueProvider && isLinkedIssueNumber(linkedItem.number)) {
+      return linkedItem.number
+    }
+    const numbers = new Set(
+      attachments
+        .filter((item) => item.provider === issueProvider && item.type === 'issue')
+        .map((item) => item.number)
+    )
+    return numbers.size === 1 ? [...numbers][0] : null
+  }
+  const github = forProvider('github')
+  const gitlab = forProvider('gitlab')
   if (provider === 'github') {
     return github
   }

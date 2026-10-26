@@ -37,6 +37,51 @@ describe('gitLabApiFor', () => {
     )
   })
 
+  it('sends reviewed promotion MR details through the new server method', async () => {
+    const selector = {
+      repoPath: '/work/app',
+      repoId: 'server-repo',
+      repoOwnerExecutionHostId: 'runtime:owner-server'
+    }
+    const details = { title: 'Validate in test', description: 'Related to #11', draft: false }
+    await gitLabApiFor(selector).createPromotionMR({
+      ...selector,
+      source: 'feature-1',
+      target: 'develop-1',
+      expectedSha: 'a'.repeat(40),
+      details
+    })
+
+    expect(rpc.call).toHaveBeenCalledWith(
+      { kind: 'environment', environmentId: 'owner-server' },
+      'gitlab.createPromotionMRWithDetails',
+      expect.objectContaining({ repo: 'id:server-repo', details }),
+      { timeoutMs: 30_000 }
+    )
+  })
+
+  it('requires a server upgrade rather than losing MR details on an older server', async () => {
+    rpc.call.mockRejectedValue(
+      Object.assign(new Error('Unknown method'), { code: 'method_not_found' })
+    )
+    const selector = {
+      repoPath: '/work/app',
+      repoId: 'server-repo',
+      repoOwnerExecutionHostId: 'runtime:owner-server'
+    }
+
+    await expect(
+      gitLabApiFor(selector).createPromotionMR({
+        ...selector,
+        source: 'feature-1',
+        target: 'develop-1',
+        expectedSha: 'a'.repeat(40),
+        details: { title: 'Validate in test', description: '', draft: false }
+      })
+    ).rejects.toThrow('Update Orca Server')
+    expect(rpc.call).toHaveBeenCalledOnce()
+  })
+
   it("loads a server-owned repo's reviewers from that server", async () => {
     const reviewer = {
       id: 7,
